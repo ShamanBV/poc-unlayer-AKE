@@ -1,0 +1,56 @@
+{
+  "counters": {
+    "u_column": 1,
+    "u_row": 1,
+    "u_content_regulatory_block": 1
+  },
+  "body": {
+    "id": "test-body",
+    "rows": [
+      {
+        "id": "row-1",
+        "cells": [1],
+        "columns": [
+          {
+            "id": "col-1",
+            "contents": [
+              {
+                "id": "reg-1",
+                "type": "regulatory_block",
+                "values": {
+                  "audienceEnabled": true,
+                  "audiencePreset": "uk-hcp-novartis",
+                  "audienceCustom": "",
+                  "piEnabled": true,
+                  "piPreset": "scemblix",
+                  "piCustom": "",
+                  "adverseEnabled": true,
+                  "adversePreset": "inline-note",
+                  "adverseCustom": "",
+                  "indicationEnabled": true,
+                  "indicationPreset": "scemblix-cml",
+                  "indicationCustom": "",
+                  "fontSize": "13px",
+                  "color": "#000000",
+                  "textAlign": "center",
+                  "containerPadding": "15px 25px"
+                }
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": {}
+      }
+    ],
+    "headers": [],
+    "footers": [],
+    "values": {
+      "backgroundColor": "#F7F8F9",
+      "contentWidth": "600px",
+      "fontFamily": { "label": "Arial", "value": "arial,helvetica,sans-serif" },
+      "textColor": "#002855"
+    }
+  },
+  "schemaVersion": 16
+}
