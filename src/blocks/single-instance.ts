@@ -1,53 +1,58 @@
-// Coordinator customJS — enforces single-instance for designated custom tools.
+// Coordinator customJS — drives two tile states for designated custom tools:
+//   • TODO triangle (.shaman-tool-todo)  — shown when `required: true` and the
+//     block has NOT yet been added to the design. Reminds the author.
+//   • Locked once added (.shaman-tool-added) — applied to every tracked tile
+//     once present, so it can't be added a second time. Editing still works.
 //
-// For each tracked tool (preview_disclosures, regulatory_footer, legal_footer):
-//   • Before added: tile shows a "TODO" badge to remind the user.
-//   • Once added:   tile is dimmed and drag/click is blocked, so it can't be
-//                   added a second time. Editing the placed block still works.
-//
-// Design state lives on the host side (React). The host scans every change
-// and posts {type:'shaman:tool-state', added:{...}} to the editor iframe.
-// This script receives those messages and toggles tile classes accordingly.
+// The tracked list is now driven by policy: only enabled compliance blocks are
+// passed in, each with its `required` flag. Design state lives on the host
+// (React) side and is posted to the editor iframe.
 
-const TRACKED = [
-  { name: 'preview_disclosures', label: 'Preview disclosures' },
-  { name: 'regulatory_footer', label: 'Regulatory footer' },
-  { name: 'legal_footer', label: 'Legal footer' },
-];
+export interface SingleInstanceEntry {
+  name: string;
+  label: string;
+  required: boolean;
+}
 
-const VERSION = Date.now();
+export function buildSingleInstanceCustomJS(tracked: SingleInstanceEntry[]): string {
+  const VERSION = Date.now();
 
-const SCRIPT =
-  '(function(){\n' +
-  'console.log("[single_instance] loaded v=' + VERSION + '");\n' +
-  'var TRACKED = ' + JSON.stringify(TRACKED) + ';\n' +
-  'var added = {};\n' +
-  'function updateTiles(){\n' +
-  '  var tiles = document.querySelectorAll(\'[data-tool-type="custom"]\');\n' +
-  '  tiles.forEach(function(tile){\n' +
-  '    var label = (tile.textContent||"").trim();\n' +
-  '    TRACKED.forEach(function(t){\n' +
-  '      if(t.label !== label) return;\n' +
-  '      if(added[t.name]){tile.classList.add("shaman-tool-added");tile.classList.remove("shaman-tool-todo");}\n' +
-  '      else{tile.classList.remove("shaman-tool-added");tile.classList.add("shaman-tool-todo");}\n' +
-  '    });\n' +
-  '  });\n' +
-  '}\n' +
-  'window.addEventListener("message",function(e){\n' +
-  '  if(e.data&&e.data.type==="shaman:tool-state"){added=e.data.added||{};updateTiles();}\n' +
-  '});\n' +
-  '// Block drag/click on tiles already present in the design.\n' +
-  'function isLocked(target){\n' +
-  '  return !!(target&&target.closest&&target.closest(\'.blockbuilder-content-tool[data-tool-type="custom"].shaman-tool-added\'));\n' +
-  '}\n' +
-  '["pointerdown","mousedown","click"].forEach(function(ev){\n' +
-  '  document.addEventListener(ev,function(e){if(isLocked(e.target)){e.stopImmediatePropagation();e.preventDefault();}},true);\n' +
-  '});\n' +
-  '// Tiles are re-created when the Content tab opens — keep classes in sync.\n' +
-  'new MutationObserver(function(){updateTiles();}).observe(document.body,{childList:true,subtree:true});\n' +
-  '// Apply initial TODO state until host posts the real state.\n' +
-  'updateTiles();\n' +
-  '})();';
+  const SCRIPT =
+    '(function(){\n' +
+    'console.log("[single_instance] loaded v=' + VERSION + '");\n' +
+    'var TRACKED = ' + JSON.stringify(tracked) + ';\n' +
+    'var added = {};\n' +
+    'function updateTiles(){\n' +
+    '  var tiles = document.querySelectorAll(\'[data-tool-type="custom"]\');\n' +
+    '  tiles.forEach(function(tile){\n' +
+    '    var label = (tile.textContent||"").trim();\n' +
+    '    TRACKED.forEach(function(t){\n' +
+    '      if(t.label !== label) return;\n' +
+    '      if(added[t.name]){\n' +
+    '        tile.classList.add("shaman-tool-added");\n' +
+    '        tile.classList.remove("shaman-tool-todo");\n' +
+    '      } else {\n' +
+    '        tile.classList.remove("shaman-tool-added");\n' +
+    '        if(t.required) tile.classList.add("shaman-tool-todo");\n' +
+    '        else tile.classList.remove("shaman-tool-todo");\n' +
+    '      }\n' +
+    '    });\n' +
+    '  });\n' +
+    '}\n' +
+    'window.addEventListener("message",function(e){\n' +
+    '  if(e.data&&e.data.type==="shaman:tool-state"){added=e.data.added||{};updateTiles();}\n' +
+    '});\n' +
+    '// Block drag/click on tiles already present in the design.\n' +
+    'function isLocked(target){\n' +
+    '  return !!(target&&target.closest&&target.closest(\'.blockbuilder-content-tool[data-tool-type="custom"].shaman-tool-added\'));\n' +
+    '}\n' +
+    '["pointerdown","mousedown","click"].forEach(function(ev){\n' +
+    '  document.addEventListener(ev,function(e){if(isLocked(e.target)){e.stopImmediatePropagation();e.preventDefault();}},true);\n' +
+    '});\n' +
+    '// Tiles are re-created when the Content tab opens — keep classes in sync.\n' +
+    'new MutationObserver(function(){updateTiles();}).observe(document.body,{childList:true,subtree:true});\n' +
+    'updateTiles();\n' +
+    '})();';
 
-export const SINGLE_INSTANCE_CUSTOM_JS =
-  'data:text/javascript;charset=utf-8,' + encodeURIComponent(SCRIPT) + '#v=' + VERSION;
+  return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(SCRIPT) + '#v=' + VERSION;
+}

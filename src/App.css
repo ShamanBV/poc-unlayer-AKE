@@ -124,6 +124,23 @@
   background-color: var(--shaman-grey-0);
 }
 
+.policy-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  font-size: 14px;
+  color: var(--shaman-grey-7, #6b6f72);
+  font-family: inherit;
+}
+
+.policy-error {
+  color: #c0392b;
+  padding: 24px;
+  text-align: center;
+}
+
 /* ── Unlayer wrapper ───────────────────────────────── */
 
 .unlayer-editor-wrapper {

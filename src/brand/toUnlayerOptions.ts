@@ -35,6 +35,11 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
       `.nav-link:has([data-icon="code"]) { display: none !important; }`,
       `.nav-link:has([data-icon="image"]) { display: none !important; }`,
       `.blockbuilder-content-tool[data-tool-type="row"] { display: none !important; }`,
+      // Unlayer's tool grid pushes last-row items apart (justify-content:
+      // space-between behaviour), creating a hole between Timer and HTML when
+      // there are 14 visible items (Columns is hidden). Pin to flex-start so
+      // the last row packs left.
+      `.blockbuilder-content-tools { justify-content: flex-start !important; }`,
       // ── Single-instance tools: TODO badge & "added" disabled state ──
       `.blockbuilder-content-tool.shaman-tool-todo { position: relative; }`,
       `.blockbuilder-content-tool.shaman-tool-todo::after {
@@ -88,7 +93,6 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
     },
     fonts: { showDefaultFonts: true },
     tools: {
-      table: { enabled: true },
       menu: { enabled: false },
       heading: {
         properties: {
@@ -109,6 +113,12 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
           textAlign: { value: brand.body.textAlign },
           containerPadding: { value: '0px 40px 30px 40px' },
           lineHeight: { value: brand.body.lineHeight },
+        },
+      },
+      image: {
+        properties: {
+          textAlign: { value: 'center' },
+          containerPadding: { value: '0px' },
         },
       },
       button: {
@@ -141,12 +151,7 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
           containerPadding: { value: '10px 40px' },
         },
       },
-      image: {
-        properties: {
-          textAlign: { value: 'center' },
-          containerPadding: { value: '0px' },
-        },
-      },
+      table: { enabled: true },
     },
     features: {
       textEditor: { tables: true, inlineFontControls: false, defaultFontSize: '13px' },

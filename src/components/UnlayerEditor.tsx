@@ -1,31 +1,64 @@
+import { useMemo } from 'react';
 import { EmailEditor, type EditorRef, type EmailEditorProps } from 'react-email-editor';
 import { FRUZAQLA } from '../brand/fruzaqla';
 import { brandToUnlayerOptions } from '../brand/toUnlayerOptions';
-import { PREVIEW_DISCLOSURES_CUSTOM_JS } from '../blocks/preview-disclosures';
-import { REGULATORY_FOOTER_CUSTOM_JS } from '../blocks/regulatory-footer';
-import { LEGAL_FOOTER_CUSTOM_JS } from '../blocks/legal-footer';
+import { buildPreviewDisclosuresCustomJS } from '../blocks/preview-disclosures';
+import { buildRegulatoryFooterCustomJS } from '../blocks/regulatory-footer';
+import { buildLegalFooterCustomJS } from '../blocks/legal-footer';
 import { REFERENCES_CUSTOM_JS } from '../blocks/references';
-import { SINGLE_INSTANCE_CUSTOM_JS } from '../blocks/single-instance';
+import { buildSingleInstanceCustomJS, type SingleInstanceEntry } from '../blocks/single-instance';
+import type { CompliancePolicy } from '../policy/compliance';
 
 interface UnlayerEditorProps {
   editorRef: React.RefObject<EditorRef | null>;
   projectId?: number;
+  compliancePolicy: CompliancePolicy;
   onEditorReady?: () => void;
 }
 
-const { options: brandOptions, bodyValues } = brandToUnlayerOptions(FRUZAQLA);
-const options = {
-  ...brandOptions,
-  customJS: [
-    PREVIEW_DISCLOSURES_CUSTOM_JS,
-    REGULATORY_FOOTER_CUSTOM_JS,
-    LEGAL_FOOTER_CUSTOM_JS,
-    REFERENCES_CUSTOM_JS,
-    SINGLE_INSTANCE_CUSTOM_JS,
-  ],
-};
+export function UnlayerEditor({ editorRef, projectId, compliancePolicy, onEditorReady }: UnlayerEditorProps) {
+  const { options, bodyValues, trackedNames } = useMemo(() => {
+    const { options: brandOptions, bodyValues } = brandToUnlayerOptions(FRUZAQLA);
+    const { blocks, documentDefaults, documentContainer, linkConfig, context } = compliancePolicy;
+    const ctx = {
+      documentDefaults,
+      documentContainer: documentContainer ?? {},
+      contextProduct: context.product,
+      linkConfig: linkConfig ?? {},
+    };
+    // Compact positions: enabled compliance blocks always occupy 1..N regardless
+    // of which ones are disabled, so Unlayer's built-in tools don't slip into the
+    // gap (e.g. "Button" sliding into position 1 when preview_disclosures is off).
+    const enabledOrder = [
+      { key: 'preview_disclosures', position: blocks.preview_disclosures.position, enabled: blocks.preview_disclosures.enabled },
+      { key: 'regulatory_footer', position: blocks.regulatory_footer.position, enabled: blocks.regulatory_footer.enabled },
+      { key: 'legal_footer', position: blocks.legal_footer.position, enabled: blocks.legal_footer.enabled },
+    ]
+      .filter((b) => b.enabled)
+      .sort((a, b) => a.position - b.position);
+    const compactPos: Record<string, number> = {};
+    enabledOrder.forEach((b, i) => {
+      compactPos[b.key] = i + 1;
+    });
 
-export function UnlayerEditor({ editorRef, projectId, onEditorReady }: UnlayerEditorProps) {
+    const tracked: SingleInstanceEntry[] = [];
+    const customJS: string[] = [];
+    if (blocks.preview_disclosures.enabled) {
+      customJS.push(buildPreviewDisclosuresCustomJS({ ...blocks.preview_disclosures, position: compactPos.preview_disclosures }, ctx));
+      tracked.push({ name: 'preview_disclosures', label: blocks.preview_disclosures.label, required: blocks.preview_disclosures.required ?? false });
+    }
+    if (blocks.regulatory_footer.enabled) {
+      customJS.push(buildRegulatoryFooterCustomJS({ ...blocks.regulatory_footer, position: compactPos.regulatory_footer }, ctx));
+      tracked.push({ name: 'regulatory_footer', label: blocks.regulatory_footer.label, required: blocks.regulatory_footer.required ?? false });
+    }
+    if (blocks.legal_footer.enabled) {
+      customJS.push(buildLegalFooterCustomJS({ ...blocks.legal_footer, position: compactPos.legal_footer }, ctx));
+      tracked.push({ name: 'legal_footer', label: blocks.legal_footer.label, required: blocks.legal_footer.required ?? false });
+    }
+    customJS.push(REFERENCES_CUSTOM_JS, buildSingleInstanceCustomJS(tracked));
+    return { options: { ...brandOptions, customJS }, bodyValues, trackedNames: tracked.map((t) => t.name) };
+  }, [compliancePolicy]);
+
   const onReady: EmailEditorProps['onReady'] = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const editor = (editorRef.current as any)?.editor;
@@ -41,10 +74,9 @@ export function UnlayerEditor({ editorRef, projectId, onEditorReady }: UnlayerEd
       },
     });
 
-    // Track which tracked custom tools are present and post state to the
+    // Track which compliance custom tools are present and post state to the
     // editor iframe so single-instance.ts can lock/unlock their tiles.
-    const TRACKED = ['preview_disclosures', 'regulatory_footer', 'legal_footer'];
-
+    // Tracked list is driven by which blocks were enabled in the policy.
     const broadcast = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       editor.saveDesign((design: any) => {
@@ -54,9 +86,8 @@ export function UnlayerEditor({ editorRef, projectId, onEditorReady }: UnlayerEd
             (c.contents ?? []).forEach((x) => {
               const slug = (x.slug ||
                 (typeof x.type === 'string' && x.type.startsWith('custom#') ? x.type.slice(7) : null)) as string | null;
-              if (slug && TRACKED.includes(slug)) {
+              if (slug && trackedNames.includes(slug)) {
                 added[slug] = true;
-                console.log('[shaman:debug] full content node:', JSON.parse(JSON.stringify(x)));
               }
             });
           });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditorRef } from 'react-email-editor';
 import { UnlayerEditor } from './components/UnlayerEditor';
+import { loadCompliancePolicy, type CompliancePolicy } from './policy/compliance';
 import './App.css';
 
 const UNLAYER_PROJECT_ID = import.meta.env.VITE_UNLAYER_PROJECT_ID
@@ -12,6 +13,15 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [referencesDrawerOpen, setReferencesDrawerOpen] = useState(false);
+  const [compliancePolicy, setCompliancePolicy] = useState<CompliancePolicy | null>(null);
+  const [policyError, setPolicyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = new URLSearchParams(window.location.search).get('policy') ?? '/compliance.json';
+    loadCompliancePolicy(url)
+      .then(setCompliancePolicy)
+      .catch((err) => setPolicyError(err instanceof Error ? err.message : String(err)));
+  }, []);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -85,7 +95,19 @@ function App() {
       </header>
       <div className="app-body">
         <div className="app-editor-pane">
-          <UnlayerEditor editorRef={editorRef} projectId={UNLAYER_PROJECT_ID} />
+          {policyError ? (
+            <div className="policy-status policy-error">
+              Failed to load compliance policy: {policyError}
+            </div>
+          ) : !compliancePolicy ? (
+            <div className="policy-status">Loading compliance policy…</div>
+          ) : (
+            <UnlayerEditor
+              editorRef={editorRef}
+              projectId={UNLAYER_PROJECT_ID}
+              compliancePolicy={compliancePolicy}
+            />
+          )}
         </div>
       </div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.message}</div>}

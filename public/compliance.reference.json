@@ -1,0 +1,306 @@
+{
+  "_comment": "REFERENCE — fully-annotated compliance policy showing every available field. Not loaded at runtime; the live policy is at public/compliance.json. Comments use the `_comment` key convention (JSON has no native comments).",
+
+  "$schema": "https://shaman.dev/schema/compliance-policy/v2.1.json",
+  "version": "2.1",
+
+  "context": {
+    "_comment": "Identifies which KB slice this policy was composed from. Used to filter variants by `product` at runtime and for audit traceability.",
+    "company": "Novartis",
+    "country": "GB",
+    "language": "en",
+    "product": "Scemblix",
+    "kbSnapshotId": "kb_2026-05-28_novartis_uk_en"
+  },
+
+  "documentDefaults": {
+    "_comment": "Document-wide typography defaults. Cascade order: element.layout → slotStyles[slot] → container.layout (if inside a sub-container) → block.layout → documentDefaults. First non-empty value wins. Empty strings mean 'inherit from Unlayer body settings'.",
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "13px",
+    "fontWeight": 400,
+    "color": "#151515",
+    "lineHeight": "140%",
+    "textAlign": "left"
+  },
+
+  "documentContainer": {
+    "_comment": "Document-wide container defaults. Each block's `container` overrides these per-property. Use four-value padding form ('T R B L') so Unlayer's padding widget round-trips cleanly.",
+    "backgroundColor": "",
+    "padding": "0px 0px 0px 0px",
+    "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" },
+    "marginTop": ""
+  },
+
+  "linkConfig": {
+    "_comment": "Suffix appended to every external_link href (UTM/tracking). Smart-joined: starts with `?` but switched to `&` if URI already has a query. Not applied to email_link / merge_field / plain. Not applied when user is in Custom override mode.",
+    "hrefSuffix": "?utm_medium={{utm_medium}}&utm_source={{utm_source}}&utm_campaign={{utm_campaign}}&sfmcval={{sfmcval}}"
+  },
+
+  "blocks": {
+
+    "preview_disclosures": {
+      "_comment": "Example: a block with NO sub-containers — all elements rendered as bare divs stacked in one outer wrapper.",
+      "enabled": false,
+      "_comment_required": "`required: true` shows a TODO triangle on the tile until the block is added to the design. `false` or omitted means optional (no triangle, but still single-instance — block can't be added twice).",
+      "required": true,
+      "position": 1,
+      "label": "Preview disclosures",
+      "layout": {
+        "_comment": "Block-level typography. Inherits unset props from documentDefaults.",
+        "fontSize": "13px",
+        "textAlign": "center"
+      },
+      "container": {
+        "_comment": "Block-level wrapper styling. Inherits unset props from documentContainer.",
+        "backgroundColor": "",
+        "padding": "15px 25px 15px 25px",
+        "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" },
+        "marginTop": ""
+      },
+      "containers": [],
+      "slotRouting": {},
+      "slotStyles": {
+        "_comment": "Per-slot layout overrides applied during the cascade. Keyed by element.slot.",
+        "prescribing_information": { "fontWeight": "bold" },
+        "indication": { "marginTop": "18px" }
+      },
+      "elements": [
+        {
+          "_comment": "Minimal element: just one variant, no placeholders.",
+          "id": "audience_restriction",
+          "slot": "audience_restriction",
+          "label": "Audience Restriction",
+          "displayOrder": 1,
+          "defaultVariantId": "pd_audience_v1",
+          "spacing": { "marginBottom": "6px" },
+          "variants": [
+            {
+              "id": "pd_audience_v1",
+              "order": 1,
+              "count": 3,
+              "note": "Canonical 2025+ variant",
+              "text": "This is a promotional email, created and funded by Novartis, intended for UK Healthcare Professionals only.",
+              "placeholders": []
+            },
+            {
+              "id": "pd_audience_v3",
+              "order": 3,
+              "count": 1,
+              "deprecated": true,
+              "_comment": "deprecated:true keeps the variant available in the Source dropdown but tags it [dep] in the label.",
+              "note": "Deprecated 2024 template",
+              "text": "This is a promotional email from Novartis intended for GB Healthcare Professionals.",
+              "placeholders": []
+            }
+          ]
+        },
+        {
+          "_comment": "Element with all four placeholder kinds for reference. `product` on variants filters by context.product — Glivec variant is hidden when context.product === 'Scemblix'.",
+          "id": "prescribing_information",
+          "slot": "prescribing_information",
+          "label": "PI Link",
+          "displayOrder": 2,
+          "defaultVariantId": "pd_pi_v1",
+          "spacing": { "marginBottom": "6px" },
+          "layout": {
+            "_comment": "Per-element layout override (overrides slotStyles, container, block, document)."
+          },
+          "kbMeta": {
+            "_comment": "Passthrough metadata from the KB — preserved for downstream automation; not rendered."
+          },
+          "variants": [
+            {
+              "id": "pd_pi_v1",
+              "order": 1,
+              "count": 4,
+              "product": "Scemblix",
+              "note": "Canonical",
+              "text": "Prescribing information for SCEMBLIX® ▼ (asciminib) can be found {{pi_link}} (external link).",
+              "placeholders": [
+                {
+                  "_comment": "external_link → <a href='uri+hrefSuffix' target='_blank' rel='noopener'>anchorText</a>",
+                  "key": "pi_link",
+                  "kind": "external_link",
+                  "anchorText": "here",
+                  "uri": "https://www.medicines.org.uk/emc/product/12345/smpc"
+                }
+              ]
+            },
+            {
+              "id": "pd_pi_v2_demo",
+              "order": 2,
+              "count": 1,
+              "product": "Scemblix",
+              "note": "Demo: external + plain placeholders",
+              "text": "Prescribing information for SCEMBLIX®▼ (asciminib) can be found {{pi_link}}.{{ref1}}",
+              "placeholders": [
+                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://example.com/smpc" },
+                {
+                  "_comment": "plain → just substitutes anchorText (no <a> tag). Good for footnote markers like '1'.",
+                  "key": "ref1",
+                  "kind": "plain",
+                  "anchorText": "1"
+                }
+              ]
+            },
+            {
+              "id": "pd_pi_v3_filtered",
+              "order": 3,
+              "count": 1,
+              "product": "Glivec",
+              "_comment": "Filtered at runtime: product !== context.product so this variant is hidden from the Source dropdown.",
+              "note": "Comparator-product PI link",
+              "text": "Prescribing information for GLIVEC® (imatinib) can be found {{pi_link}}.",
+              "placeholders": [
+                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://example.com/glivec" }
+              ]
+            }
+          ]
+        },
+        {
+          "_comment": "Demo: email_link and merge_field placeholder kinds.",
+          "id": "ae_reporting_demo",
+          "slot": "ae_reporting_disclaimer",
+          "label": "AE Reporting (demo placeholders)",
+          "displayOrder": 3,
+          "defaultVariantId": "pd_aerd_demo_v1",
+          "variants": [
+            {
+              "id": "pd_aerd_demo_v1",
+              "order": 1,
+              "count": 1,
+              "note": "Mix of kinds",
+              "text": "Report to MHRA at {{yc}}, email {{medinfo}}, or click {{unsub}}.",
+              "placeholders": [
+                { "key": "yc", "kind": "external_link", "anchorText": "yellowcard.mhra.gov.uk", "uri": "https://yellowcard.mhra.gov.uk/" },
+                {
+                  "_comment": "email_link → <a href='mailto:uri'>anchorText</a>. `uri` is the bare email address.",
+                  "key": "medinfo",
+                  "kind": "email_link",
+                  "anchorText": "medinfo.uk@novartis.com",
+                  "uri": "medinfo.uk@novartis.com"
+                },
+                {
+                  "_comment": "merge_field → <a href='uri'>anchorText</a>. `uri` is a template token replaced server-side (SFMC, Pardot, etc).",
+                  "key": "unsub",
+                  "kind": "merge_field",
+                  "anchorText": "here",
+                  "uri": "%%UNSUB_TOKEN%%"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    "regulatory_footer": {
+      "_comment": "Example: a block WITH sub-containers — elements are grouped into named boxes via slotRouting.",
+      "enabled": true,
+      "position": 2,
+      "label": "Regulatory footer",
+      "layout": { "fontSize": "13px", "lineHeight": "140%" },
+      "container": {
+        "backgroundColor": "",
+        "padding": "0px 0px 0px 0px",
+        "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" }
+      },
+      "containers": [
+        {
+          "_comment": "Named sub-container. Elements whose slot maps to this id (via slotRouting) get wrapped in a div with this container/layout.",
+          "id": "highlighted_box",
+          "label": "Highlighted Box",
+          "layout": { "fontWeight": "bold", "textAlign": "left" },
+          "container": {
+            "backgroundColor": "",
+            "padding": "24px 32px 24px 32px",
+            "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" }
+          },
+          "elementSpacing": "14px"
+        },
+        {
+          "id": "ae_box",
+          "label": "AE Reporting Box",
+          "layout": { "textAlign": "center" },
+          "container": {
+            "backgroundColor": "",
+            "padding": "24px 32px 24px 32px",
+            "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" },
+            "marginTop": "12px"
+          }
+        }
+      ],
+      "slotRouting": {
+        "_comment": "Routes each slot to a container id. `null` means render outside any container.",
+        "warnings": "highlighted_box",
+        "contraindications": "highlighted_box",
+        "ae_reporting": "ae_box",
+        "abbreviations": null
+      },
+      "slotStyles": {
+        "abbreviations": { "fontSize": "10px", "marginTop": "16px" }
+      },
+      "elements": [
+        {
+          "id": "warnings",
+          "slot": "warnings",
+          "label": "Warnings",
+          "displayOrder": 1,
+          "defaultVariantId": "rf_warnings_v1",
+          "variants": [
+            { "id": "rf_warnings_v1", "order": 1, "count": 2, "product": "Scemblix", "note": "Canonical", "text": "...", "placeholders": [] }
+          ]
+        }
+      ]
+    },
+
+    "legal_footer": {
+      "_comment": "Example: a block with logo (BDS asset reference) and approval code (MLR document reference).",
+      "enabled": true,
+      "position": 3,
+      "label": "Legal footer",
+      "layout": { "fontSize": "11px", "lineHeight": "150%", "textAlign": "center" },
+      "container": {
+        "backgroundColor": "",
+        "padding": "24px 24px 24px 24px",
+        "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" }
+      },
+      "containers": [],
+      "slotRouting": {},
+      "slotStyles": {
+        "confidentiality_notice": { "fontSize": "10px", "color": "#879091", "marginTop": "12px" }
+      },
+      "logo": {
+        "_comment": "BDS asset reference. Editor shows a dropdown of all assets matching assetTag. Selected assetId is resolved to URL at render. URL is NEVER stored in the policy.",
+        "enabled": true,
+        "assetTag": "BDS-logo",
+        "assetId": "asset_novartis_primary",
+        "width": "180",
+        "alt": "Novartis",
+        "spacing": { "marginBottom": "16px" }
+      },
+      "elements": [
+        {
+          "id": "contact_info",
+          "slot": "contact_info",
+          "label": "Contact Info",
+          "displayOrder": 1,
+          "defaultVariantId": "lf_contact_v1",
+          "spacing": { "marginBottom": "12px" },
+          "variants": [
+            { "id": "lf_contact_v1", "order": 1, "count": 1, "note": "Default", "text": "Novartis Pharmaceuticals UK Limited...", "placeholders": [] }
+          ]
+        }
+      ],
+      "approvalCode": {
+        "_comment": "MLR document reference. When mlrDocumentId is null, renders fallbackPlaceholder. When set, render-time fetch resolves the actual code (read-only — author cannot edit).",
+        "enabled": true,
+        "mlrDocumentId": null,
+        "fallbackPlaceholder": "Pending MLR approval",
+        "layout": { "fontSize": "9px", "color": "#9FA3A4" },
+        "spacing": { "marginTop": "8px" }
+      }
+    }
+
+  }
+}

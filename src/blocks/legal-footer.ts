@@ -1,185 +1,166 @@
 // Custom Unlayer tool: "Legal footer"
-// Sits at the very bottom of an email below the Compliance Notes block.
-// Stacks: Logo · Address & registration · Unsubscribe · Privacy notice ·
-// Confidentiality notice · Approval code & date.
-//
-// Same preset/custom/none pattern as Regulatory and Compliance blocks for the
-// re-usable text fields. Logo "content" is a URL (custom override is a plain
-// text input). Approval code is a free-text per-email field with no presets.
-
-export interface LegalFooterPreset {
-  id: string;
-  label: string;
-  text: string;
-}
-
-export const LEGAL_FOOTER_PRESETS: Record<
-  'logo' | 'address' | 'unsubscribe' | 'privacy' | 'confidentiality',
-  LegalFooterPreset[]
-> = {
-  logo: [
-    {
-      id: 'novartis',
-      label: 'Novartis',
-      // Public Wikimedia file used as a stand-in until the real CDN URL is wired
-      text: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Novartis-Logo.svg/320px-Novartis-Logo.svg.png',
-    },
-  ],
-  address: [
-    {
-      id: 'novartis-uk',
-      label: 'Novartis UK',
-      text:
-        'Novartis Pharmaceuticals UK Limited<br>2nd Floor, The WestWorks Building, 195 Wood Lane, London W12 7FQ<br>Registered in England No. 119006',
-    },
-    {
-      id: 'novartis-us',
-      label: 'Novartis US',
-      text:
-        'Novartis Pharmaceuticals Corporation<br>One Health Plaza, East Hanover, NJ 07936-1080',
-    },
-  ],
-  unsubscribe: [
-    {
-      id: 'standard',
-      label: 'Standard',
-      text:
-        'You can <a href="{{unsubscribe_link}}">unsubscribe</a> from these emails at any time.',
-    },
-  ],
-  privacy: [
-    {
-      id: 'novartis',
-      label: 'Novartis',
-      text:
-        'For information on how Novartis processes your personal data, see our <a href="https://www.novartis.com/privacy-policy">Privacy Policy</a>.',
-    },
-  ],
-  confidentiality: [
-    {
-      id: 'standard',
-      label: 'Standard',
-      text:
-        'This email is confidential and intended only for the addressee. If you received this in error, please delete it and notify the sender.',
-    },
-  ],
-};
-
-const VERSION = Date.now();
+// Logo resolved from BDS by tag; elements driven by KB variants; approval
+// code resolved from MLR document (or fallback placeholder).
+import type { LegalFooterBlock, BuildContext, Variant } from '../policy/compliance';
+import { filterVariantsByProduct } from '../policy/compliance';
+import { RENDER_HELPERS_JS } from './render-helpers';
+import { buildElementSection } from './build-element-section';
+import { fetchAssetsByTag, type BdsAsset } from '../policy/bds-mock';
+import { resolveApprovalCode } from '../policy/mlr-mock';
 
 const LOCK_SVG =
   '<svg aria-hidden="true" focusable="false" data-prefix="fal" data-icon="lock" class="svg-inline--fa fa-lock fa-3x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M128 128l0 64 192 0 0-64c0-53-43-96-96-96s-96 43-96 96zM96 192l0-64C96 57.3 153.3 0 224 0s128 57.3 128 128l0 64 16 0c44.2 0 80 35.8 80 80l0 160c0 44.2-35.8 80-80 80L80 512c-44.2 0-80-35.8-80-80L0 272c0-44.2 35.8-80 80-80l16 0zM32 272l0 160c0 26.5 21.5 48 48 48l288 0c26.5 0 48-21.5 48-48l0-160c0-26.5-21.5-48-48-48L80 224c-26.5 0-48 21.5-48 48z"/></svg>';
 
-const SCRIPT =
-  '(function(){\n' +
-  'console.log("[legal_footer] customJS loaded v=' + VERSION + '");\n' +
-  'var PRESETS = ' + JSON.stringify(LEGAL_FOOTER_PRESETS) + ';\n' +
-  'var CUSTOM = "__custom__";\n' +
-  'var NONE = "__none__";\n' +
-  'var NONE_LABELS = {logo:"No logo",address:"No address",unsubscribe:"No unsubscribe",privacy:"No privacy notice",confidentiality:"No confidentiality notice"};\n' +
-  'var lastPreset = {logo:"novartis",address:"novartis-uk",unsubscribe:"standard",privacy:"novartis",confidentiality:"standard"};\n' +
-  'function presetOptions(group){var opts=PRESETS[group].map(function(p){return {value:p.id,label:p.label};});opts.push({value:CUSTOM,label:"Custom override"});opts.push({value:NONE,label:NONE_LABELS[group]});return opts;}\n' +
-  'function findPreset(group,id){for(var i=0;i<PRESETS[group].length;i++){if(PRESETS[group][i].id===id)return PRESETS[group][i];}return null;}\n' +
-  'function pickText(group,presetId,customHtml){if(presetId===NONE)return null;if(presetId===CUSTOM)return customHtml||"";var p=findPreset(group,presetId);return p?p.text:"";}\n' +
-  'function renderHtml(values){\n' +
-  '  var bg=values.backgroundColor||"";\n' +
-  '  var color=values.color||"";\n' +
-  '  var textAlign=values.textAlign||"center";\n' +
-  '  var padding=values.padding||"24px";\n' +
-  '  var fontSize=values.fontSize||"11px";\n' +
-  '  var logoWidth=values.logoWidth||"180";\n' +
-  '  var html=\'<div style="\'+(bg?\'background-color:\'+bg+\';\':\'\')+\'padding:\'+padding+\';font-family:arial,helvetica,sans-serif;font-size:\'+fontSize+\';\'+(color?\'color:\'+color+\';\':\'\')+\'text-align:\'+textAlign+\';line-height:150%;">\';\n' +
-  '  var logo=pickText("logo",values.logoPreset,values.logoCustom);\n' +
-  '  if(logo){html+=\'<div style="margin:0 0 16px 0;"><img src="\'+logo+\'" alt="Logo" width="\'+logoWidth+\'" style="display:inline-block;max-width:100%;height:auto;border:0;" /></div>\';}\n' +
-  '  var addr=pickText("address",values.addressPreset,values.addressCustom);\n' +
-  '  if(addr!==null){html+=\'<div style="margin:0 0 12px 0;">\'+addr+\'</div>\';}\n' +
-  '  var unsub=pickText("unsubscribe",values.unsubscribePreset,values.unsubscribeCustom);\n' +
-  '  if(unsub!==null){html+=\'<div style="margin:0 0 6px 0;">\'+unsub+\'</div>\';}\n' +
-  '  var priv=pickText("privacy",values.privacyPreset,values.privacyCustom);\n' +
-  '  if(priv!==null){html+=\'<div style="margin:0 0 12px 0;">\'+priv+\'</div>\';}\n' +
-  '  var conf=pickText("confidentiality",values.confidentialityPreset,values.confidentialityCustom);\n' +
-  '  if(conf!==null){html+=\'<div style="margin:12px 0 0 0;font-size:10px;color:#879091;">\'+conf+\'</div>\';}\n' +
-  '  if(values.approvalCode&&String(values.approvalCode).trim()){html+=\'<div style="margin:8px 0 0 0;font-size:9px;color:#9FA3A4;">\'+values.approvalCode+\'</div>\';}\n' +
-  '  html+=\'</div>\';\n' +
-  '  return html;\n' +
-  '}\n' +
-  'unlayer.registerTool({\n' +
-  '  name:"legal_footer",\n' +
-  '  label:"Legal footer",\n' +
-  '  icon:' + JSON.stringify(LOCK_SVG) + ',\n' +
-  '  position:3,\n' +
-  '  supportedDisplayModes:["email","web"],\n' +
-  '  css:".u_content_custom_legal_footer{padding:0 !important;}",\n' +
-  '  options:{\n' +
-  '    logo:{title:"Logo",position:1,options:{\n' +
-  '      logoPreset:{label:"Source",defaultValue:"novartis",widget:"dropdown",data:{options:presetOptions("logo")}},\n' +
-  '      logoCustom:{label:"Custom URL",defaultValue:"",widget:"text"},\n' +
-  '      logoWidth:{label:"Logo width (px)",defaultValue:"180",widget:"text"}\n' +
-  '    }},\n' +
-  '    address:{title:"Address & Registration",position:2,options:{\n' +
-  '      addressPreset:{label:"Content",defaultValue:"novartis-uk",widget:"dropdown",data:{options:presetOptions("address")}},\n' +
-  '      addressCustom:{label:"Custom text",defaultValue:"",widget:"rich_text"}\n' +
-  '    }},\n' +
-  '    unsubscribe:{title:"Unsubscribe",position:3,options:{\n' +
-  '      unsubscribePreset:{label:"Content",defaultValue:"standard",widget:"dropdown",data:{options:presetOptions("unsubscribe")}},\n' +
-  '      unsubscribeCustom:{label:"Custom text",defaultValue:"",widget:"rich_text"}\n' +
-  '    }},\n' +
-  '    privacy:{title:"Privacy Notice",position:4,options:{\n' +
-  '      privacyPreset:{label:"Content",defaultValue:"novartis",widget:"dropdown",data:{options:presetOptions("privacy")}},\n' +
-  '      privacyCustom:{label:"Custom text",defaultValue:"",widget:"rich_text"}\n' +
-  '    }},\n' +
-  '    confidentiality:{title:"Confidentiality",position:5,options:{\n' +
-  '      confidentialityPreset:{label:"Content",defaultValue:"standard",widget:"dropdown",data:{options:presetOptions("confidentiality")}},\n' +
-  '      confidentialityCustom:{label:"Custom text",defaultValue:"",widget:"rich_text"}\n' +
-  '    }},\n' +
-  '    approval:{title:"Approval Code & Date",position:6,options:{\n' +
-  '      approvalCode:{label:"Approval code",defaultValue:"UK | 2026-05 | XX-12345",widget:"text"}\n' +
-  '    }},\n' +
-  '    style:{title:"Style",position:7,options:{\n' +
-  '      backgroundColor:{label:"Background colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
-  '      fontSize:{label:"Font size",defaultValue:"11px",widget:"font_size"},\n' +
-  '      color:{label:"Text colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
-  '      textAlign:{label:"Alignment",defaultValue:"center",widget:"alignment"},\n' +
-  '      padding:{label:"Padding",defaultValue:"24px",widget:"padding"}\n' +
-  '    }}\n' +
-  '  },\n' +
-  '  values:{},\n' +
-  '  propertyStates:function(values){\n' +
-  '    return {\n' +
-  '      logoCustom:{enabled:values.logoPreset===CUSTOM},\n' +
-  '      addressCustom:{enabled:values.addressPreset===CUSTOM},\n' +
-  '      unsubscribeCustom:{enabled:values.unsubscribePreset===CUSTOM},\n' +
-  '      privacyCustom:{enabled:values.privacyPreset===CUSTOM},\n' +
-  '      confidentialityCustom:{enabled:values.confidentialityPreset===CUSTOM}\n' +
-  '    };\n' +
-  '  },\n' +
-  '  transformer:function(values,source){\n' +
-  '    if(!source||!source.name)return values;\n' +
-  '    var GROUPS=["logo","address","unsubscribe","privacy","confidentiality"];\n' +
-  '    var newValues=Object.assign({},values);\n' +
-  '    for(var i=0;i<GROUPS.length;i++){\n' +
-  '      var g=GROUPS[i];\n' +
-  '      if(source.name===g+"Preset"){\n' +
-  '        if(source.value===CUSTOM){\n' +
-  '          var p=findPreset(g,lastPreset[g]);\n' +
-  '          if(p) newValues[g+"Custom"]=p.text;\n' +
-  '        } else if(source.value!==NONE){\n' +
-  '          lastPreset[g]=source.value;\n' +
-  '        }\n' +
-  '      }\n' +
-  '    }\n' +
-  '    return newValues;\n' +
-  '  },\n' +
-  '  renderer:{\n' +
-  '    Viewer:unlayer.createViewer({render:function(values){return renderHtml(values);}}),\n' +
-  '    exporters:{\n' +
-  '      web:function(values){return renderHtml(values);},\n' +
-  '      email:function(values){return renderHtml(values);}\n' +
-  '    },\n' +
-  '    head:{css:function(){return"";},js:function(){return"";}}\n' +
-  '  }\n' +
-  '});\n' +
-  '})();';
+export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildContext): string {
+  const elements = [...block.elements].sort((a, b) => a.displayOrder - b.displayOrder);
+  const VERSION = Date.now();
 
-export const LEGAL_FOOTER_CUSTOM_JS =
-  'data:text/javascript;charset=utf-8,' + encodeURIComponent(SCRIPT) + '#v=' + VERSION;
+  const variantsById: Record<string, Variant[]> = {};
+  const defaultsById: Record<string, string> = {};
+  for (const el of elements) {
+    const visible = filterVariantsByProduct(el.variants, ctx.contextProduct).sort((a, b) => a.order - b.order);
+    variantsById[el.id] = visible;
+    defaultsById[el.id] = visible.find((v) => v.id === el.defaultVariantId)?.id ?? visible[0]?.id ?? el.defaultVariantId;
+  }
+
+  // BDS logo lookup (mock for now)
+  const logoAssets: BdsAsset[] = block.logo.enabled ? fetchAssetsByTag(block.logo.assetTag) : [];
+  const logoAssetMap: Record<string, string> = Object.fromEntries(logoAssets.map((a) => [a.id, a.url]));
+  const logoOptions = logoAssets.map((a) => ({ value: a.id, label: a.label }));
+
+  const resolvedApprovalCode = block.approvalCode.enabled
+    ? resolveApprovalCode(block.approvalCode.mlrDocumentId) || block.approvalCode.fallbackPlaceholder
+    : null;
+
+  const sections = elements.map((el, i) => buildElementSection(el, i + 2, `${i + 2}. `, ctx)); // +2 since logo is position 1
+  const elementOptionsJs = sections.map((s) => s.optionsJs).join(',\n');
+  const propertyStatesJs = sections.map((s) => s.propertyStatesEntry).join(',\n');
+  const transformerJs = sections.map((s) => s.transformerBranches).join('\n');
+
+  const logoSectionJs = block.logo.enabled
+    ? '    logo:{title:"1. Logo (BDS)",position:1,options:{\n' +
+      '      logoAssetId:{label:"Asset (tag: ' + block.logo.assetTag + ')",defaultValue:' + JSON.stringify(block.logo.assetId) + ',widget:"dropdown",data:{options:' + JSON.stringify(logoOptions) + '}},\n' +
+      '      logoWidth:{label:"Width (px)",defaultValue:' + JSON.stringify(block.logo.width) + ',widget:"text"}\n' +
+      '    }},\n'
+    : '';
+
+  const approvalSectionJs = block.approvalCode.enabled
+    ? '    approval:{title:' + (resolvedApprovalCode === block.approvalCode.fallbackPlaceholder
+        ? '"Approval Code (pending MLR)"'
+        : '"Approval Code (from MLR)"') + ',position:90,options:{\n' +
+      '      _info:{label:"Read-only",defaultValue:' + JSON.stringify(resolvedApprovalCode) + ',widget:"text"}\n' +
+      '    }},\n'
+    : '';
+
+  const SCRIPT =
+    '(function(){\n' +
+    'console.log("[legal_footer] customJS loaded v=' + VERSION + '");\n' +
+    RENDER_HELPERS_JS +
+    'var ELEMENTS = ' + JSON.stringify(elements) + ';\n' +
+    'var VARIANTS = ' + JSON.stringify(variantsById) + ';\n' +
+    'var DEFAULTS = ' + JSON.stringify(defaultsById) + ';\n' +
+    'var DOC_DEFAULTS = ' + JSON.stringify(ctx.documentDefaults) + ';\n' +
+    'var BLOCK_LAYOUT = ' + JSON.stringify(block.layout || {}) + ';\n' +
+    'var BLOCK_CONTAINER = ' + JSON.stringify(block.container || {}) + ';\n' +
+    'var DOC_CONTAINER = ' + JSON.stringify(ctx.documentContainer) + ';\n' +
+    'var SLOT_STYLES = ' + JSON.stringify(block.slotStyles || {}) + ';\n' +
+    'var LINK_CONFIG = ' + JSON.stringify(ctx.linkConfig) + ';\n' +
+    'var LOGO_URL_MAP = ' + JSON.stringify(logoAssetMap) + ';\n' +
+    'var LOGO_ALT = ' + JSON.stringify(block.logo.alt) + ';\n' +
+    'var LOGO_SPACING = ' + JSON.stringify(block.logo.spacing || {}) + ';\n' +
+    'var LOGO_ENABLED = ' + JSON.stringify(block.logo.enabled) + ';\n' +
+    'var APPROVAL_CODE = ' + JSON.stringify(resolvedApprovalCode) + ';\n' +
+    'var APPROVAL_LAYOUT = ' + JSON.stringify(block.approvalCode.layout || {}) + ';\n' +
+    'var APPROVAL_SPACING = ' + JSON.stringify(block.approvalCode.spacing || {}) + ';\n' +
+    'var lastVariantIds = {};\n' +
+    'function shamanRenderElement(el,values){\n' +
+    '  var variantId=(values&&values[el.id+"_variantId"])||DEFAULTS[el.id];\n' +
+    '  var content;\n' +
+    '  if(variantId==="__custom__"){content=(values&&values[el.id+"_text"])||"";}\n' +
+    '  else{var v=shamanFindVariant(VARIANTS[el.id],variantId);content=v?shamanResolveTokens(v.text,v.placeholders,LINK_CONFIG):"";}\n' +
+    '  var slotStyle=SLOT_STYLES[el.slot]||{};\n' +
+    '  var merged=shamanMergeLayout(DOC_DEFAULTS,BLOCK_LAYOUT,slotStyle,el.layout,el.spacing);\n' +
+    '  var css=shamanLayoutCss(merged)+shamanSpacingCss(merged,null);\n' +
+    '  return \'<div style="\'+css+\'">\'+content+\'</div>\';\n' +
+    '}\n' +
+    'function renderHtml(values){\n' +
+    '  var outerLayout=shamanMergeLayout(DOC_DEFAULTS,BLOCK_LAYOUT);\n' +
+    '  var bg=values.backgroundColor||BLOCK_CONTAINER.backgroundColor||DOC_CONTAINER.backgroundColor||"";\n' +
+    '  var padding=values.padding||BLOCK_CONTAINER.padding||DOC_CONTAINER.padding||"";\n' +
+    '  var fontFamily=outerLayout.fontFamily||"";\n' +
+    '  var fontSize=values.fontSize||outerLayout.fontSize||"";\n' +
+    '  var color=values.color||outerLayout.color||"";\n' +
+    '  var lineHeight=outerLayout.lineHeight||"";\n' +
+    '  var textAlign=values.textAlign||outerLayout.textAlign||"";\n' +
+    '  var s="";\n' +
+    '  if(bg)s+="background-color:"+bg+";";\n' +
+    '  if(padding)s+="padding:"+padding+";";\n' +
+    '  if(fontFamily)s+="font-family:"+fontFamily+";";\n' +
+    '  if(fontSize)s+="font-size:"+fontSize+";";\n' +
+    '  if(color)s+="color:"+color+";";\n' +
+    '  if(lineHeight)s+="line-height:"+lineHeight+";";\n' +
+    '  if(textAlign)s+="text-align:"+textAlign+";";\n' +
+    '  s+=shamanContainerCss({border:BLOCK_CONTAINER.border||DOC_CONTAINER.border});\n' +
+    '  var html=\'<div style="\'+s+\'">\';\n' +
+    '  if(LOGO_ENABLED){\n' +
+    '    var assetId=(values&&values.logoAssetId)||"";\n' +
+    '    var url=LOGO_URL_MAP[assetId]||"";\n' +
+    '    var w=(values&&values.logoWidth)||"180";\n' +
+    '    if(url){\n' +
+    '      var mb=LOGO_SPACING.marginBottom||"16px";\n' +
+    '      html+=\'<div style="margin-bottom:\'+mb+\';"><img src="\'+url+\'" alt="\'+LOGO_ALT+\'" width="\'+w+\'" style="display:inline-block;max-width:100%;height:auto;border:0;" /></div>\';\n' +
+    '    }\n' +
+    '  }\n' +
+    '  for(var i=0;i<ELEMENTS.length;i++){html+=shamanRenderElement(ELEMENTS[i],values);}\n' +
+    '  if(APPROVAL_CODE){\n' +
+    '    var apMerged=shamanMergeLayout(DOC_DEFAULTS,BLOCK_LAYOUT,APPROVAL_LAYOUT,APPROVAL_SPACING);\n' +
+    '    var apCss=shamanLayoutCss(apMerged)+shamanSpacingCss(apMerged,null);\n' +
+    '    html+=\'<div style="\'+apCss+\'">\'+APPROVAL_CODE+\'</div>\';\n' +
+    '  }\n' +
+    '  html+=\'</div>\';\n' +
+    '  return html;\n' +
+    '}\n' +
+    'unlayer.registerTool({\n' +
+    '  name:"legal_footer",\n' +
+    '  label:' + JSON.stringify(block.label) + ',\n' +
+    '  icon:' + JSON.stringify(LOCK_SVG) + ',\n' +
+    '  position:' + block.position + ',\n' +
+    '  supportedDisplayModes:["email","web"],\n' +
+    '  css:".u_content_custom_legal_footer{padding:0 !important;}",\n' +
+    '  options:{\n' +
+    logoSectionJs +
+    elementOptionsJs + ',\n' +
+    approvalSectionJs +
+    '    style:{title:"Style",position:99,options:{\n' +
+    '      backgroundColor:{label:"Background colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
+    '      fontSize:{label:"Font size",defaultValue:' + JSON.stringify(block.layout?.fontSize ?? ctx.documentDefaults.fontSize ?? '') + ',widget:"font_size"},\n' +
+    '      color:{label:"Text colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
+    '      textAlign:{label:"Alignment",defaultValue:' + JSON.stringify(block.layout?.textAlign ?? ctx.documentDefaults.textAlign ?? '') + ',widget:"alignment"},\n' +
+    '      padding:{label:"Padding",defaultValue:' + JSON.stringify(block.container?.padding ?? '') + ',widget:"padding"}\n' +
+    '    }}\n' +
+    '  },\n' +
+    '  values:{},\n' +
+    '  propertyStates:function(values){\n' +
+    '    return {\n' +
+    propertyStatesJs + '\n' +
+    '    };\n' +
+    '  },\n' +
+    '  transformer:function(values,source){\n' +
+    '    if(!source||!source.name)return values;\n' +
+    '    var newValues=Object.assign({},values);\n' +
+    transformerJs + '\n' +
+    '    return newValues;\n' +
+    '  },\n' +
+    '  renderer:{\n' +
+    '    Viewer:unlayer.createViewer({render:function(values){return renderHtml(values);}}),\n' +
+    '    exporters:{\n' +
+    '      web:function(values){return renderHtml(values);},\n' +
+    '      email:function(values){return renderHtml(values);}\n' +
+    '    },\n' +
+    '    head:{css:function(){return"";},js:function(){return"";}}\n' +
+    '  }\n' +
+    '});\n' +
+    '})();';
+
+  return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(SCRIPT) + '#v=' + VERSION;
+}
