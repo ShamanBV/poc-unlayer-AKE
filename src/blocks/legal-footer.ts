@@ -85,7 +85,8 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     '}\n' +
     'function renderHtml(values){\n' +
     '  var outerLayout=shamanMergeLayout(DOC_DEFAULTS,BLOCK_LAYOUT);\n' +
-    '  var bg=values.backgroundColor||BLOCK_CONTAINER.backgroundColor||DOC_CONTAINER.backgroundColor||"";\n' +
+    '  // Picker is the single source of truth — clear == transparent, no policy fallback.\n' +
+    '  var bg=values.backgroundColor||"transparent";\n' +
     '  var padding=values.padding||BLOCK_CONTAINER.padding||DOC_CONTAINER.padding||"";\n' +
     '  var fontFamily=outerLayout.fontFamily||"";\n' +
     '  var fontSize=values.fontSize||outerLayout.fontSize||"";\n' +
@@ -93,7 +94,7 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     '  var lineHeight=outerLayout.lineHeight||"";\n' +
     '  var textAlign=values.textAlign||outerLayout.textAlign||"";\n' +
     '  var s="";\n' +
-    '  if(bg)s+="background-color:"+bg+";";\n' +
+    '  s+="background-color:"+bg+";";\n' +
     '  if(padding)s+="padding:"+padding+";";\n' +
     '  if(fontFamily)s+="font-family:"+fontFamily+";";\n' +
     '  if(fontSize)s+="font-size:"+fontSize+";";\n' +
@@ -126,13 +127,13 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     '  icon:' + JSON.stringify(LOCK_SVG) + ',\n' +
     '  position:' + block.position + ',\n' +
     '  supportedDisplayModes:["email","web"],\n' +
-    '  css:".u_content_custom_legal_footer{padding:0 !important;}",\n' +
+    '  css:".u_content_custom_legal_footer{padding:0 !important;background:transparent !important;}",\n' +
     '  options:{\n' +
     logoSectionJs +
     elementOptionsJs + ',\n' +
     approvalSectionJs +
     '    style:{title:"Style",position:99,options:{\n' +
-    '      backgroundColor:{label:"Background colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
+    '      backgroundColor:{label:"Background colour",defaultValue:' + JSON.stringify(block.container?.backgroundColor ?? '') + ',widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
     '      fontSize:{label:"Font size",defaultValue:' + JSON.stringify(block.layout?.fontSize ?? ctx.documentDefaults.fontSize ?? '') + ',widget:"font_size"},\n' +
     '      color:{label:"Text colour",widget:"color_picker",data:{mode:"CONTRAST"}},\n' +
     '      textAlign:{label:"Alignment",defaultValue:' + JSON.stringify(block.layout?.textAlign ?? ctx.documentDefaults.textAlign ?? '') + ',widget:"alignment"},\n' +

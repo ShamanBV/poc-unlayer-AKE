@@ -16,12 +16,15 @@ import type { BuildContext } from '../policy/compliance';
 const SHAMAN_PLACEHOLDER_URL =
   'https://placeholder.shamanqa.com/api/placeholder?type=large&emoji=%F0%9F%93%B7&header=Add+Image&body=Select+image+from+library';
 
+// Native Unlayer-style image icon — stroke-only frame with sun and mountain.
+// `fa-3x` class makes Unlayer's tile CSS render it at the same size as the
+// built-in tool icons (matches preview_disclosures / regulatory_footer etc.).
 const IMAGE_SVG =
-  '<svg aria-hidden="true" focusable="false" data-prefix="fal" data-icon="image" class="svg-inline--fa fa-image fa-3x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M448 80c8.8 0 16 7.2 16 16l0 320c0 8.8-7.2 16-16 16L64 432c-8.8 0-16-7.2-16-16L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm248.3 196.8c-3-4.3-7.9-6.8-13.1-6.8s-10.1 2.5-13.1 6.8l-56.8 81.1-18.5-21.1c-3-3.4-7.4-5.4-12-5.4s-9 2-12 5.4l-71.7 81.8c-4.1 4.6-5 11.2-2.4 16.8s8.2 9.1 14.4 9.1l63.7 0 38.4 0 24.9 0 16 0 88 0c5.9 0 11.4-3.3 14.1-8.6s2.4-11.6-1-16.5l-79-112.6zM160 144a32 32 0 1 0 0 64 32 32 0 1 0 0-64z"/></svg>';
+  '<svg aria-hidden="true" focusable="false" class="svg-inline--fa fa-image fa-3x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
 
 const LAYOUT_OPTIONS = [
-  { value: 'padded', label: 'Padded (matches row)' },
-  { value: 'bleed', label: 'Side-to-side (full bleed)' },
+  { value: 'padded', label: 'In line' },
+  { value: 'bleed', label: 'Side-to-side' },
 ];
 
 const WIDTH_OPTIONS = [
@@ -221,7 +224,7 @@ export function buildBrandedImageCustomJS(ctx: BuildContext, position: number): 
     '});\n' +
     'unlayer.registerTool({\n' +
     '  name:"branded_image",\n' +
-    '  label:"Branded image",\n' +
+    '  label:"Image",\n' +
     '  icon:' + JSON.stringify(IMAGE_SVG) + ',\n' +
     '  position:' + position + ',\n' +
     '  supportedDisplayModes:["email","web"],\n' +
@@ -242,16 +245,11 @@ export function buildBrandedImageCustomJS(ctx: BuildContext, position: number): 
     '    }}\n' +
     '  },\n' +
     '  values:{},\n' +
-    '  transformer:function(values,source){\n' +
-    '    if(!source||!source.name)return values;\n' +
-    '    var newValues=Object.assign({},values);\n' +
-    '    // Button-triggered actions arrive via postMessage; the property\n' +
-    '    // editor button posts {type:"shaman:branded-image-action", action}.\n' +
-    '    // The host forwards "open" to the Visual Library modal and bounces\n' +
-    '    // "clear" back here to wipe the asset fields. Layout (padded/bleed)\n' +
-    '    // controls the image\'s own containerPadding — no row mutation needed.\n' +
-    '    return newValues;\n' +
-    '  },\n' +
+    '  // No transformer — all button actions go through document-level\n' +
+    '  // delegation + postMessage to the host. Returning a fresh values object\n' +
+    '  // here was causing Unlayer to re-mount the content element on every\n' +
+    '  // value change, which dismissed the property panel.\n' +
+    '  transformer:function(values){return values;},\n' +
     '  renderer:{\n' +
     '    Viewer:unlayer.createViewer({render:function(values){return renderHtml(values);}}),\n' +
     '    exporters:{\n' +

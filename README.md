@@ -46,6 +46,28 @@ npm run dev -- --host 127.0.0.1
 
 Opens on `http://127.0.0.1:5175/`. Vite's proxy in `vite.config.ts` forwards `/api/shaman/*` to `http://localhost:3001` (apryse-designer). If the proxy target is down, the Visual Library falls back to the local mock (`src/policy/bds-mock.ts`) so dev isn't blocked.
 
+## Running without apryse-designer
+
+You can develop this repo without running apryse-designer at all — the Visual Library will fall back to local mock data and surface a yellow banner across the top of the modal so you know it's not the real library.
+
+**What works on mock:**
+- Every UI flow — picker opens, search filters, tabs, asset selection wiring, drag-to-canvas, export to HTML
+- 6 mock logos, 10 hero banners, 10 icons across the categories (`src/policy/bds-mock.ts`)
+- Compliance blocks, branded image tool, all custom property editors
+
+**What you lose:**
+- 100+ real Xanlinax / Scemblix assets from Shaman QA
+- Real `altText` values authored by AI or manually in Shaman's Visual Library
+- Anything that depends on Shaman GraphQL state (asset tags edited in Shaman, newly uploaded images, etc.)
+
+**When to set apryse-designer up anyway:**
+- Reproducing a bug that involves real Shaman data
+- Demo to a stakeholder who'll spot the placeholder thumbnails
+- Verifying that a change to image-routing code doesn't break the real API contract
+- Iterating on alt-text / metadata behaviour
+
+If you choose not to run apryse-designer, you can skip §1 entirely. Run §2 only and the picker will fall back to mock with a banner explaining what's missing.
+
 ## Configuration
 
 | Where | Setting | Default |

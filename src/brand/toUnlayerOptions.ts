@@ -94,6 +94,21 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
     fonts: { showDefaultFonts: true },
     tools: {
       menu: { enabled: false },
+      // Rows / columns default to transparent so a custom block's own
+      // background-color picker is the single source of truth. Without this,
+      // Unlayer's default column background is white, which leaks behind
+      // transparent compliance blocks.
+      rows: {
+        properties: {
+          backgroundColor: { value: 'transparent', editor: { defaultValue: 'transparent' } },
+          columnsBackgroundColor: { value: 'transparent', editor: { defaultValue: 'transparent' } },
+        },
+      },
+      columns: {
+        properties: {
+          backgroundColor: { value: 'transparent', editor: { defaultValue: 'transparent' } },
+        },
+      },
       heading: {
         properties: {
           fontFamily: { value: fontFamily },

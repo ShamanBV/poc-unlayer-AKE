@@ -69,9 +69,10 @@ export function buildRegulatoryFooterCustomJS(block: BlockBase, ctx: BuildContex
     '  var outerLayout=shamanMergeLayout(DOC_DEFAULTS,BLOCK_LAYOUT);\n' +
     '  var outerFf=outerLayout.fontFamily||"";\n' +
     '  var outerColor=outerLayout.color||"";\n' +
-    '  var outerS="font-family:"+outerFf+";"+(outerColor?"color:"+outerColor+";":"");\n' +
+    '  // Picker is the single source of truth — clear == transparent, no policy fallback.\n' +
+    '  var bg=values.backgroundColor||"transparent";\n' +
+    '  var outerS="font-family:"+outerFf+";"+(outerColor?"color:"+outerColor+";":"")+"background-color:"+bg+";";\n' +
     '  var mergedBlockContainer={\n' +
-    '    backgroundColor:BLOCK_CONTAINER.backgroundColor||DOC_CONTAINER.backgroundColor||"",\n' +
     '    padding:BLOCK_CONTAINER.padding||DOC_CONTAINER.padding||"",\n' +
     '    border:BLOCK_CONTAINER.border||DOC_CONTAINER.border,\n' +
     '    marginTop:BLOCK_CONTAINER.marginTop||DOC_CONTAINER.marginTop||""\n' +
@@ -93,9 +94,12 @@ export function buildRegulatoryFooterCustomJS(block: BlockBase, ctx: BuildContex
     '  icon:' + JSON.stringify(CLIPBOARD_LIST_CHECK_SVG) + ',\n' +
     '  position:' + block.position + ',\n' +
     '  supportedDisplayModes:["email","web"],\n' +
-    '  css:".u_content_custom_regulatory_footer{padding:0 !important;}",\n' +
+    '  css:".u_content_custom_regulatory_footer{padding:0 !important;background:transparent !important;}",\n' +
     '  options:{\n' +
-    elementOptionsJs + '\n' +
+    elementOptionsJs + ',\n' +
+    '    style:{title:"Style",position:99,options:{\n' +
+    '      backgroundColor:{label:"Background colour",defaultValue:' + JSON.stringify(block.container?.backgroundColor ?? '') + ',widget:"color_picker",data:{mode:"CONTRAST"}}\n' +
+    '    }}\n' +
     '  },\n' +
     '  values:{},\n' +
     '  propertyStates:function(values){\n' +

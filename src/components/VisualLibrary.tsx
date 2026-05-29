@@ -2,7 +2,7 @@
 // ImagePicker (banner-editor/components/ImagePicker.tsx). Library only — no
 // local upload tab, per Shaman's brand-asset policy.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchBds, fetchImages, getAltText, type BdsAsset } from '../policy/bds-mock';
+import { fetchBds, fetchImages, getAltText, type BdsAsset, type DataSource } from '../policy/bds-mock';
 
 export interface SelectedAsset {
   id: number | string;
@@ -37,12 +37,14 @@ export function VisualLibrary({ open, accountId, productId, initialTab = 'all', 
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<FilterTab>(initialTab);
+  const [source, setSource] = useState<DataSource>('api');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!open) return;
     setTab(initialTab);
     setSearch('');
+    setSource('api'); // reset; flipped to 'mock' below if the API is unreachable
   }, [open, initialTab]);
 
   // Load BDS-categorised assets once on open.
@@ -52,6 +54,8 @@ export function VisualLibrary({ open, accountId, productId, initialTab = 'all', 
       setLogos(bds.logos);
       setHeroImages(bds.heroImages);
       setIcons(bds.icons);
+      // BDS source = global "source" for the modal. If either endpoint went mock, surface it.
+      setSource((prev) => (bds.source === 'mock' ? 'mock' : prev));
     });
   }, [open, accountId, productId]);
 
@@ -60,7 +64,10 @@ export function VisualLibrary({ open, accountId, productId, initialTab = 'all', 
     (term: string) => {
       setLoading(true);
       fetchImages(accountId, term)
-        .then((res) => setAllImages(res.images))
+        .then((res) => {
+          setAllImages(res.images);
+          setSource((prev) => (res.source === 'mock' ? 'mock' : prev));
+        })
         .finally(() => setLoading(false));
     },
     [accountId],
@@ -93,6 +100,13 @@ export function VisualLibrary({ open, accountId, productId, initialTab = 'all', 
           <h2>Visual Library</h2>
           <button className="vl-close" onClick={onClose} aria-label="Close">×</button>
         </header>
+
+        {source === 'mock' && (
+          <div className="vl-banner">
+            <strong>Showing mock library</strong> — apryse-designer not reachable on{' '}
+            <code>localhost:3001</code>. See README → <em>Running without apryse-designer</em>.
+          </div>
+        )}
 
         <div className="vl-controls">
           <input
