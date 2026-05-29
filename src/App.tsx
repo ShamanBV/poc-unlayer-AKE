@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditorRef } from 'react-email-editor';
-import { UnlayerEditor } from './components/UnlayerEditor';
+import { UnlayerEditor, applyVisualLibrarySelection } from './components/UnlayerEditor';
+import { VisualLibrary, type SelectedAsset } from './components/VisualLibrary';
 import { loadCompliancePolicy, type CompliancePolicy } from './policy/compliance';
 import './App.css';
+
+// QA account + product. Matches the slug under apryse-designer/data/bds/qa/.
+const SHAMAN_ACCOUNT_ID = 'shaman-onco-us';
+const SHAMAN_PRODUCT_ID = 2; // Xanlinax
 
 const UNLAYER_PROJECT_ID = import.meta.env.VITE_UNLAYER_PROJECT_ID
   ? Number(import.meta.env.VITE_UNLAYER_PROJECT_ID)
@@ -15,6 +20,7 @@ function App() {
   const [referencesDrawerOpen, setReferencesDrawerOpen] = useState(false);
   const [compliancePolicy, setCompliancePolicy] = useState<CompliancePolicy | null>(null);
   const [policyError, setPolicyError] = useState<string | null>(null);
+  const [visualLibraryOpen, setVisualLibraryOpen] = useState(false);
 
   useEffect(() => {
     const url = new URLSearchParams(window.location.search).get('policy') ?? '/compliance.json';
@@ -106,10 +112,23 @@ function App() {
               editorRef={editorRef}
               projectId={UNLAYER_PROJECT_ID}
               compliancePolicy={compliancePolicy}
+              onOpenVisualLibrary={() => setVisualLibraryOpen(true)}
             />
           )}
         </div>
       </div>
+      <VisualLibrary
+        open={visualLibraryOpen}
+        accountId={SHAMAN_ACCOUNT_ID}
+        productId={SHAMAN_PRODUCT_ID}
+        onClose={() => setVisualLibraryOpen(false)}
+        onSelect={(picked: SelectedAsset) => {
+          setVisualLibraryOpen(false);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const editor = (editorRef.current as any)?.editor;
+          if (editor) applyVisualLibrarySelection(editor, picked);
+        }}
+      />
       {toast && <div className={`toast toast-${toast.type}`}>{toast.message}</div>}
       {referencesDrawerOpen && (
         <div className="references-drawer-backdrop" onClick={() => setReferencesDrawerOpen(false)}>

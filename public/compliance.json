@@ -28,6 +28,12 @@
     "hrefSuffix": "?utm_medium={{utm_medium}}&utm_source={{utm_source}}&utm_campaign={{utm_campaign}}&sfmcval={{sfmcval}}"
   },
 
+  "tools": {
+    "branded_image": {
+      "containerPadding": "20px 20px 20px 20px"
+    }
+  },
+
   "blocks": {
     "preview_disclosures": {
       "enabled": true,

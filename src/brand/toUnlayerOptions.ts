@@ -115,12 +115,9 @@ export function brandToUnlayerOptions(brand: BrandDefinition): UnlayerInit {
           lineHeight: { value: brand.body.lineHeight },
         },
       },
-      image: {
-        properties: {
-          textAlign: { value: 'center' },
-          containerPadding: { value: '0px' },
-        },
-      },
+      // Built-in image disabled — replaced by branded_image custom tool which
+      // routes all images through Shaman's Visual Library (BDS).
+      image: { enabled: false },
       button: {
         properties: {
           buttonColors: {

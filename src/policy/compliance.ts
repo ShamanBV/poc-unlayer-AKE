@@ -118,6 +118,16 @@ export interface LinkConfig {
   hrefSuffix?: string;
 }
 
+// Per-tool defaults — mirrors Apryse's brand policy shape
+// (config.tools.<tool>.properties.<prop>.value). For the POC we only carry
+// containerPadding for branded_image; extend as more tools need policy-driven
+// defaults.
+export interface ToolDefaults {
+  branded_image?: {
+    containerPadding?: string;
+  };
+}
+
 export interface CompliancePolicy {
   $schema?: string;
   version: string;
@@ -131,6 +141,7 @@ export interface CompliancePolicy {
   documentDefaults: DocumentDefaults;
   documentContainer?: ContainerSpec;
   linkConfig?: LinkConfig;
+  tools?: ToolDefaults;
   blocks: {
     preview_disclosures: BlockBase;
     regulatory_footer: BlockBase;
@@ -143,6 +154,7 @@ export interface BuildContext {
   documentContainer: ContainerSpec;
   contextProduct: string;
   linkConfig: LinkConfig;
+  tools: ToolDefaults;
 }
 
 export async function loadCompliancePolicy(url = '/compliance.json'): Promise<CompliancePolicy> {

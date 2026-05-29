@@ -5,7 +5,7 @@ import type { LegalFooterBlock, BuildContext, Variant } from '../policy/complian
 import { filterVariantsByProduct } from '../policy/compliance';
 import { RENDER_HELPERS_JS } from './render-helpers';
 import { buildElementSection } from './build-element-section';
-import { fetchAssetsByTag, type BdsAsset } from '../policy/bds-mock';
+import { fetchAssetsByTag, type BdsAssetLegacy } from '../policy/bds-mock';
 import { resolveApprovalCode } from '../policy/mlr-mock';
 
 const LOCK_SVG =
@@ -24,7 +24,7 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
   }
 
   // BDS logo lookup (mock for now)
-  const logoAssets: BdsAsset[] = block.logo.enabled ? fetchAssetsByTag(block.logo.assetTag) : [];
+  const logoAssets: BdsAssetLegacy[] = block.logo.enabled ? fetchAssetsByTag(block.logo.assetTag) : [];
   const logoAssetMap: Record<string, string> = Object.fromEntries(logoAssets.map((a) => [a.id, a.url]));
   const logoOptions = logoAssets.map((a) => ({ value: a.id, label: a.label }));
 
