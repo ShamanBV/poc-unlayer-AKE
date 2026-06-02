@@ -1,3 +1,12 @@
+// Compliance policy v3 — per-country file, brand cascade, language-keyed text.
+//
+// At runtime the active brand and language come from URL params
+// (?brand=<vaultid>&lang=<iso639>). In production Shaman will pass these
+// from email metadata. Brand-level entries always override the country
+// level. Missing brand text for a type='brand' element is a render error.
+
+// ── Common building blocks (unchanged from v2.1) ─────────────────────────────
+
 export interface DocumentDefaults {
   fontFamily?: string;
   fontSize?: string;
@@ -46,28 +55,69 @@ export interface Placeholder {
   uri?: string;
 }
 
-export interface Variant {
-  id: string;
-  order: number;
-  count?: number;
-  text: string;
-  note?: string;
-  product?: string;
+export type LocalizedText = Record<string, string>;
+
+// ── Element sources (text + placeholders) ────────────────────────────────────
+
+export interface ElementSource {
+  text: LocalizedText;
   placeholders?: Placeholder[];
-  deprecated?: boolean;
 }
 
-export interface Element {
+export interface VariantSource {
+  id: string;
+  note?: string;
+  deprecated?: boolean;
+  text: LocalizedText;
+  placeholders?: Placeholder[];
+}
+
+// ── Elements: country-level vs brand-level ──────────────────────────────────
+
+export interface CountryElement {
   id: string;
   slot: string;
   label?: string;
-  displayOrder: number;
-  defaultVariantId: string;
-  variants: Variant[];
+  order: number;
+  type: 'country';
   layout?: LayoutOverride;
   spacing?: Spacing;
   kbMeta?: Record<string, unknown>;
+  // Text lives on the element itself for country-type.
+  default: ElementSource;
+  variants?: VariantSource[];
 }
+
+export interface BrandElement {
+  id: string;
+  slot: string;
+  label?: string;
+  order: number;
+  type: 'brand';
+  layout?: LayoutOverride;
+  spacing?: Spacing;
+  kbMeta?: Record<string, unknown>;
+  // No text here — must come from brands[active].blocks[blockId][id].
+}
+
+export type Element = CountryElement | BrandElement;
+
+export interface BrandElementOverride {
+  default: ElementSource;
+  variants?: VariantSource[];
+}
+
+export interface Brand {
+  name: string;
+  vaultid: string;
+  blocks: {
+    [blockId: string]: {
+      [elementId: string]: BrandElementOverride;
+    };
+  };
+}
+
+// ── Block structure ─────────────────────────────────────────────────────────
 
 export interface SubContainer {
   id: string;
@@ -80,7 +130,7 @@ export interface SubContainer {
 export interface BlockBase {
   enabled: boolean;
   required?: boolean;
-  position: number;
+  order: number;
   label: string;
   layout?: LayoutOverride;
   container?: ContainerSpec;
@@ -112,59 +162,116 @@ export interface LegalFooterBlock extends BlockBase {
   approvalCode: LegalFooterApprovalCode;
 }
 
-export interface LinkConfig {
-  // Suffix appended to every external_link href (e.g. UTM string).
-  // Smart-joined: starts with "?" but switched to "&" if URI already has a query.
-  hrefSuffix?: string;
-}
-
-// Per-tool defaults — mirrors Apryse's brand policy shape
-// (config.tools.<tool>.properties.<prop>.value). For the POC we only carry
-// containerPadding for branded_image; extend as more tools need policy-driven
-// defaults.
-export interface ToolDefaults {
-  branded_image?: {
-    containerPadding?: string;
-  };
-}
+// ── Top-level policy ────────────────────────────────────────────────────────
 
 export interface CompliancePolicy {
   $schema?: string;
   version: string;
-  context: {
-    company: string;
-    country: string;
-    language: string;
-    product: string;
-    kbSnapshotId?: string;
-  };
+  country: string;
+  countryVaultid: string;
+  language: string;        // fallback language if URL ?lang= absent
+  languages: string[];     // languages provided by this file
   documentDefaults: DocumentDefaults;
   documentContainer?: ContainerSpec;
-  linkConfig?: LinkConfig;
-  tools?: ToolDefaults;
   blocks: {
     preview_disclosures: BlockBase;
     regulatory_footer: BlockBase;
     legal_footer: LegalFooterBlock;
   };
+  brands: Brand[];
 }
+
+// ── Build context (passed to block factories) ───────────────────────────────
 
 export interface BuildContext {
   documentDefaults: DocumentDefaults;
   documentContainer: ContainerSpec;
-  contextProduct: string;
-  linkConfig: LinkConfig;
-  tools: ToolDefaults;
+  language: string;
+  selectedBrand: Brand;
+}
+
+// ── Resolved element (what the factories actually work with) ────────────────
+// Brand override + language pick + canonical-as-first-variant already applied.
+
+export interface ResolvedVariant {
+  id: string;
+  text: string;
+  placeholders: Placeholder[];
+  note?: string;
+  deprecated?: boolean;
+}
+
+export interface ResolvedElement {
+  id: string;
+  slot: string;
+  label?: string;
+  order: number;
+  layout?: LayoutOverride;
+  spacing?: Spacing;
+  defaultVariantId: string;        // always "default"
+  variants: ResolvedVariant[];     // [canonical, ...explicit variants]
+}
+
+export class ComplianceResolveError extends Error {}
+
+export function resolveElement(
+  el: Element,
+  blockId: string,
+  brand: Brand,
+  language: string,
+): ResolvedElement {
+  // 1. Look for brand-level override first
+  const override = brand.blocks?.[blockId]?.[el.id];
+  let source: { default: ElementSource; variants?: VariantSource[] } | undefined;
+  if (override) {
+    source = { default: override.default, variants: override.variants };
+  } else if (el.type === 'country') {
+    source = { default: (el as CountryElement).default, variants: (el as CountryElement).variants };
+  } else {
+    throw new ComplianceResolveError(
+      `Missing brand text for ${blockId}.${el.id} (brand vaultid=${brand.vaultid}, type=brand)`,
+    );
+  }
+
+  const pickText = (lt: LocalizedText, id: string): string => {
+    const t = lt?.[language];
+    if (t == null) {
+      throw new ComplianceResolveError(
+        `Missing '${language}' translation for ${blockId}.${el.id}/${id}`,
+      );
+    }
+    return t;
+  };
+
+  const canonical: ResolvedVariant = {
+    id: 'default',
+    text: pickText(source.default.text, 'default'),
+    placeholders: source.default.placeholders ?? [],
+    note: 'Default',
+  };
+
+  const explicit: ResolvedVariant[] = (source.variants ?? []).map((v) => ({
+    id: v.id,
+    text: pickText(v.text, v.id),
+    placeholders: v.placeholders ?? [],
+    note: v.note,
+    deprecated: v.deprecated,
+  }));
+
+  return {
+    id: el.id,
+    slot: el.slot,
+    label: el.label,
+    order: el.order,
+    layout: el.layout,
+    spacing: el.spacing,
+    defaultVariantId: 'default',
+    variants: [canonical, ...explicit],
+  };
 }
 
 export async function loadCompliancePolicy(url = '/compliance.json'): Promise<CompliancePolicy> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load compliance policy: ${res.status}`);
   return (await res.json()) as CompliancePolicy;
-}
-
-// Drop variants whose `product` is set to something other than the active
-// product. Variants without a `product` field are market-general — always kept.
-export function filterVariantsByProduct(variants: Variant[], product: string): Variant[] {
-  return variants.filter((v) => !v.product || v.product === product);
 }

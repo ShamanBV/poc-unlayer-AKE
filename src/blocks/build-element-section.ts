@@ -1,41 +1,39 @@
-// Generates per-element Unlayer tool-section JS snippets (options + propertyStates +
-// transformer entries) from a compliance v2.1 Element. Shared by all three block
-// factories so the variant-dropdown UX stays consistent.
-import type { Element, Variant, BuildContext } from '../policy/compliance';
-import { filterVariantsByProduct } from '../policy/compliance';
+// Generates per-element Unlayer tool-section JS snippets from a ResolvedElement
+// (already passed through brand-cascade + language-pick by resolveElement).
+// Shared by all three block factories so the variant-dropdown UX stays
+// consistent.
+import type { ResolvedElement, ResolvedVariant } from '../policy/compliance';
 
 export interface ElementSectionFragments {
   optionsJs: string;
   propertyStatesEntry: string;
   transformerBranches: string;
   effectiveDefaultVariantId: string;
-  visibleVariants: Variant[];
+  variants: ResolvedVariant[];
 }
 
 const CUSTOM = '__custom__';
 const RESET = '__reset__';
 
-function variantLabelTs(v: Variant): string {
-  const note = v.note || '';
+function variantLabel(v: ResolvedVariant): string {
+  if (v.id === 'default') return 'Default';
+  const note = v.note ?? '';
   const noteShort = note.length > 25 ? note.substring(0, 25) + '…' : note;
-  const ct = v.count ? ` (×${v.count})` : '';
   const dep = v.deprecated ? ' [dep]' : '';
-  return `v${v.order}${noteShort ? ` — ${noteShort}` : ''}${ct}${dep}`;
+  return `${v.id}${noteShort ? ` — ${noteShort}` : ''}${dep}`;
 }
 
 export function buildElementSection(
-  el: Element,
+  el: ResolvedElement,
   position: number,
   titlePrefix: string,
-  ctx: BuildContext,
 ): ElementSectionFragments {
-  const visible = filterVariantsByProduct(el.variants, ctx.contextProduct).sort((a, b) => a.order - b.order);
-  const effectiveDefaultId =
-    visible.find((v) => v.id === el.defaultVariantId)?.id ?? (visible[0]?.id ?? el.defaultVariantId);
+  const variants = el.variants;
+  const effectiveDefaultId = el.defaultVariantId;
 
-  const dropdownOptions: { value: string; label: string }[] = visible.map((v) => ({
+  const dropdownOptions: { value: string; label: string }[] = variants.map((v) => ({
     value: v.id,
-    label: variantLabelTs(v),
+    label: variantLabel(v),
   }));
   dropdownOptions.push({ value: CUSTOM, label: 'Custom override' });
   dropdownOptions.push({ value: RESET, label: 'Reset custom to canonical' });
@@ -73,6 +71,6 @@ export function buildElementSection(
     propertyStatesEntry,
     transformerBranches,
     effectiveDefaultVariantId: effectiveDefaultId,
-    visibleVariants: visible,
+    variants,
   };
 }

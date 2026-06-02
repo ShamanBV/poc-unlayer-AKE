@@ -1,8 +1,8 @@
 // Custom Unlayer tool: "Legal footer"
 // Logo resolved from BDS by tag; elements driven by KB variants; approval
 // code resolved from MLR document (or fallback placeholder).
-import type { LegalFooterBlock, BuildContext, Variant } from '../policy/compliance';
-import { filterVariantsByProduct } from '../policy/compliance';
+import type { LegalFooterBlock, BuildContext, ResolvedVariant, ResolvedElement } from '../policy/compliance';
+import { resolveElement } from '../policy/compliance';
 import { RENDER_HELPERS_JS } from './render-helpers';
 import { buildElementSection } from './build-element-section';
 import { fetchAssetsByTag, type BdsAssetLegacy } from '../policy/bds-mock';
@@ -12,15 +12,17 @@ const LOCK_SVG =
   '<svg aria-hidden="true" focusable="false" data-prefix="fal" data-icon="lock" class="svg-inline--fa fa-lock fa-3x" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M128 128l0 64 192 0 0-64c0-53-43-96-96-96s-96 43-96 96zM96 192l0-64C96 57.3 153.3 0 224 0s128 57.3 128 128l0 64 16 0c44.2 0 80 35.8 80 80l0 160c0 44.2-35.8 80-80 80L80 512c-44.2 0-80-35.8-80-80L0 272c0-44.2 35.8-80 80-80l16 0zM32 272l0 160c0 26.5 21.5 48 48 48l288 0c26.5 0 48-21.5 48-48l0-160c0-26.5-21.5-48-48-48L80 224c-26.5 0-48 21.5-48 48z"/></svg>';
 
 export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildContext): string {
-  const elements = [...block.elements].sort((a, b) => a.displayOrder - b.displayOrder);
+  const sourceElements = [...block.elements].sort((a, b) => a.order - b.order);
+  const elements: ResolvedElement[] = sourceElements.map((el) =>
+    resolveElement(el, 'legal_footer', ctx.selectedBrand, ctx.language),
+  );
   const VERSION = Date.now();
 
-  const variantsById: Record<string, Variant[]> = {};
+  const variantsById: Record<string, ResolvedVariant[]> = {};
   const defaultsById: Record<string, string> = {};
   for (const el of elements) {
-    const visible = filterVariantsByProduct(el.variants, ctx.contextProduct).sort((a, b) => a.order - b.order);
-    variantsById[el.id] = visible;
-    defaultsById[el.id] = visible.find((v) => v.id === el.defaultVariantId)?.id ?? visible[0]?.id ?? el.defaultVariantId;
+    variantsById[el.id] = el.variants;
+    defaultsById[el.id] = el.defaultVariantId;
   }
 
   // BDS logo lookup (mock for now)
@@ -32,7 +34,7 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     ? resolveApprovalCode(block.approvalCode.mlrDocumentId) || block.approvalCode.fallbackPlaceholder
     : null;
 
-  const sections = elements.map((el, i) => buildElementSection(el, i + 2, `${i + 2}. `, ctx)); // +2 since logo is position 1
+  const sections = elements.map((el, i) => buildElementSection(el, i + 2, `${i + 2}. `)); // +2 since logo is position 1
   const elementOptionsJs = sections.map((s) => s.optionsJs).join(',\n');
   const propertyStatesJs = sections.map((s) => s.propertyStatesEntry).join(',\n');
   const transformerJs = sections.map((s) => s.transformerBranches).join('\n');
@@ -64,7 +66,7 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     'var BLOCK_CONTAINER = ' + JSON.stringify(block.container || {}) + ';\n' +
     'var DOC_CONTAINER = ' + JSON.stringify(ctx.documentContainer) + ';\n' +
     'var SLOT_STYLES = ' + JSON.stringify(block.slotStyles || {}) + ';\n' +
-    'var LINK_CONFIG = ' + JSON.stringify(ctx.linkConfig) + ';\n' +
+    'var LINK_CONFIG = ' + JSON.stringify({}) + ';\n' +
     'var LOGO_URL_MAP = ' + JSON.stringify(logoAssetMap) + ';\n' +
     'var LOGO_ALT = ' + JSON.stringify(block.logo.alt) + ';\n' +
     'var LOGO_SPACING = ' + JSON.stringify(block.logo.spacing || {}) + ';\n' +
@@ -125,7 +127,7 @@ export function buildLegalFooterCustomJS(block: LegalFooterBlock, ctx: BuildCont
     '  name:"legal_footer",\n' +
     '  label:' + JSON.stringify(block.label) + ',\n' +
     '  icon:' + JSON.stringify(LOCK_SVG) + ',\n' +
-    '  position:' + block.position + ',\n' +
+    '  position:' + block.order + ',\n' +
     '  supportedDisplayModes:["email","web"],\n' +
     '  css:".u_content_custom_legal_footer{padding:0 !important;background:transparent !important;}",\n' +
     '  options:{\n' +

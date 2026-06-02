@@ -40,12 +40,13 @@ const WIDTH_OPTIONS = [
 // toggle for radius, so we ship a small custom one that mirrors the native
 // padding widget's "All sides / More options" UX.
 
-export function buildBrandedImageCustomJS(ctx: BuildContext, position: number): string {
+export function buildBrandedImageCustomJS(_ctx: BuildContext, position: number): string {
   const VERSION = Date.now();
 
-  // Container padding sourced from the policy (compliance.json → tools.branded_image.containerPadding).
-  // "Padded" layout uses this value; "Side-to-side" sets it to 0 to flush against the column edges.
-  const POLICY_PADDING = ctx.tools.branded_image?.containerPadding ?? '20px 20px 20px 20px';
+  // Container padding default. In a future iteration this will live in the
+  // general (brand) policy file rather than the compliance policy. Hardcoded
+  // here for now. "In line" layout uses this; "Side-to-side" sets it to 0.
+  const POLICY_PADDING = '20px 20px 20px 20px';
 
   const SCRIPT =
     '(function(){\n' +

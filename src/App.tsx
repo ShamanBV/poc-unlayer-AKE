@@ -1,13 +1,48 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { EditorRef } from 'react-email-editor';
 import { UnlayerEditor, applyVisualLibrarySelection } from './components/UnlayerEditor';
 import { VisualLibrary, type SelectedAsset } from './components/VisualLibrary';
 import { loadCompliancePolicy, type CompliancePolicy } from './policy/compliance';
 import './App.css';
 
-// QA account + product. Matches the slug under apryse-designer/data/bds/qa/.
+// Catches resolve errors thrown by block factories (e.g. missing brand text,
+// missing translation) so the user gets a readable message instead of a
+// blank screen.
+class EditorErrorBoundary extends Component<{ children: ReactNode; brand: string; language: string }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidUpdate(prev: { brand: string; language: string }) {
+    if (prev.brand !== this.props.brand || prev.language !== this.props.language) {
+      this.setState({ error: null });
+    }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="policy-status policy-error" style={{ flexDirection: 'column', padding: 24, alignItems: 'flex-start' }}>
+          <strong style={{ fontSize: 14 }}>Compliance render error</strong>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, marginTop: 8 }}>{this.state.error.message}</pre>
+          <small style={{ marginTop: 8, color: '#6b6f72' }}>
+            Fix the URL params (<code>?brand=&lang=</code>) or the compliance.json content.
+          </small>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// QA account. Matches the slug under apryse-designer/data/bds/qa/.
 const SHAMAN_ACCOUNT_ID = 'shaman-onco-us';
-const SHAMAN_PRODUCT_ID = 2; // Xanlinax
+// Used by the Visual Library to filter BDS assets by Shaman product ID (separate
+// from the compliance brand's vaultid — Shaman's BDS API works in numeric IDs).
+const SHAMAN_PRODUCT_ID = 2;
+
+// Active brand + language come from URL params (?brand=<vaultid>&lang=<iso639>).
+// In production Shaman will pass these from email metadata. For POC, default
+// to Scemblix UK / English when missing.
+const DEFAULT_BRAND_VAULTID = '00P000000008001'; // Scemblix in compliance.gb.json
+const DEFAULT_LANGUAGE = 'en';
 
 const UNLAYER_PROJECT_ID = import.meta.env.VITE_UNLAYER_PROJECT_ID
   ? Number(import.meta.env.VITE_UNLAYER_PROJECT_ID)
@@ -21,6 +56,10 @@ function App() {
   const [compliancePolicy, setCompliancePolicy] = useState<CompliancePolicy | null>(null);
   const [policyError, setPolicyError] = useState<string | null>(null);
   const [visualLibraryOpen, setVisualLibraryOpen] = useState(false);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const brandVaultid = urlParams.get('brand') ?? DEFAULT_BRAND_VAULTID;
+  const language = urlParams.get('lang') ?? DEFAULT_LANGUAGE;
 
   useEffect(() => {
     const url = new URLSearchParams(window.location.search).get('policy') ?? '/compliance.json';
@@ -83,7 +122,7 @@ function App() {
         </div>
         <div className="app-header-title">
           <span className="app-header-label">EMAIL TEMPLATE</span>
-          <span className="app-header-name">Unlayer Blocks POC</span>
+          <span className="app-header-name">Compliance Blocks</span>
         </div>
         <div className="app-header-right">
           <input
@@ -107,13 +146,54 @@ function App() {
             </div>
           ) : !compliancePolicy ? (
             <div className="policy-status">Loading compliance policy…</div>
+          ) : !compliancePolicy.brands.some((b) => b.vaultid === brandVaultid) ? (
+            <div className="policy-status policy-error" style={{ flexDirection: 'column', padding: 24, alignItems: 'flex-start' }}>
+              <strong style={{ fontSize: 14 }}>Brand not found</strong>
+              <p style={{ fontSize: 12, margin: '8px 0 4px' }}>
+                URL param <code>?brand={brandVaultid}</code> doesn't match any brand in <code>compliance.json</code>.
+              </p>
+              <small style={{ color: '#6b6f72' }}>
+                Available:{' '}
+                {compliancePolicy.brands.map((b, i) => (
+                  <span key={b.vaultid}>
+                    {i > 0 ? ', ' : ''}
+                    <a href={`?brand=${b.vaultid}&lang=${language}`} style={{ color: '#00A66F' }}>
+                      {b.name}
+                    </a>{' '}
+                    (<code>{b.vaultid}</code>)
+                  </span>
+                ))}
+              </small>
+            </div>
+          ) : !compliancePolicy.languages.includes(language) ? (
+            <div className="policy-status policy-error" style={{ flexDirection: 'column', padding: 24, alignItems: 'flex-start' }}>
+              <strong style={{ fontSize: 14 }}>Language not supported</strong>
+              <p style={{ fontSize: 12, margin: '8px 0 4px' }}>
+                URL param <code>?lang={language}</code> isn't in <code>compliance.json.languages</code> ({compliancePolicy.languages.join(', ')}).
+              </p>
+              <small style={{ color: '#6b6f72' }}>
+                Try{' '}
+                {compliancePolicy.languages.map((l, i) => (
+                  <span key={l}>
+                    {i > 0 ? ', ' : ''}
+                    <a href={`?brand=${brandVaultid}&lang=${l}`} style={{ color: '#00A66F' }}>
+                      {l}
+                    </a>
+                  </span>
+                ))}
+              </small>
+            </div>
           ) : (
-            <UnlayerEditor
-              editorRef={editorRef}
-              projectId={UNLAYER_PROJECT_ID}
-              compliancePolicy={compliancePolicy}
-              onOpenVisualLibrary={() => setVisualLibraryOpen(true)}
-            />
+            <EditorErrorBoundary brand={brandVaultid} language={language}>
+              <UnlayerEditor
+                editorRef={editorRef}
+                projectId={UNLAYER_PROJECT_ID}
+                compliancePolicy={compliancePolicy}
+                brandVaultid={brandVaultid}
+                language={language}
+                onOpenVisualLibrary={() => setVisualLibraryOpen(true)}
+              />
+            </EditorErrorBoundary>
           )}
         </div>
       </div>

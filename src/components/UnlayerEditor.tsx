@@ -14,6 +14,11 @@ interface UnlayerEditorProps {
   editorRef: React.RefObject<EditorRef | null>;
   projectId?: number;
   compliancePolicy: CompliancePolicy;
+  // Active brand vaultid from URL (?brand=…). Required — must match a brand
+  // in compliancePolicy.brands[] or rendering fails loudly.
+  brandVaultid: string;
+  // Active language from URL (?lang=…). Falls back to compliancePolicy.language.
+  language: string;
   onEditorReady?: () => void;
   // Triggered when the branded_image tool's "Open Visual Library" is clicked.
   onOpenVisualLibrary?: () => void;
@@ -50,24 +55,27 @@ export function applyVisualLibrarySelection(editor: any, picked: { id: string | 
   });
 }
 
-export function UnlayerEditor({ editorRef, projectId, compliancePolicy, onEditorReady, onOpenVisualLibrary }: UnlayerEditorProps) {
+export function UnlayerEditor({ editorRef, projectId, compliancePolicy, brandVaultid, language, onEditorReady, onOpenVisualLibrary }: UnlayerEditorProps) {
   const { options, bodyValues, trackedNames } = useMemo(() => {
     const { options: brandOptions, bodyValues } = brandToUnlayerOptions(FRUZAQLA);
-    const { blocks, documentDefaults, documentContainer, linkConfig, tools, context } = compliancePolicy;
+    const { blocks, documentDefaults, documentContainer, brands } = compliancePolicy;
+    const selectedBrand = brands.find((b) => b.vaultid === brandVaultid);
+    if (!selectedBrand) {
+      throw new Error(`Brand vaultid="${brandVaultid}" not found in compliance policy (available: ${brands.map((b) => b.vaultid).join(', ')})`);
+    }
     const ctx = {
       documentDefaults,
       documentContainer: documentContainer ?? {},
-      contextProduct: context.product,
-      linkConfig: linkConfig ?? {},
-      tools: tools ?? {},
+      language,
+      selectedBrand,
     };
     // Compact positions: enabled compliance blocks always occupy 1..N regardless
     // of which ones are disabled, so Unlayer's built-in tools don't slip into the
     // gap (e.g. "Button" sliding into position 1 when preview_disclosures is off).
     const enabledOrder = [
-      { key: 'preview_disclosures', position: blocks.preview_disclosures.position, enabled: blocks.preview_disclosures.enabled },
-      { key: 'regulatory_footer', position: blocks.regulatory_footer.position, enabled: blocks.regulatory_footer.enabled },
-      { key: 'legal_footer', position: blocks.legal_footer.position, enabled: blocks.legal_footer.enabled },
+      { key: 'preview_disclosures', position: blocks.preview_disclosures.order, enabled: blocks.preview_disclosures.enabled },
+      { key: 'regulatory_footer', position: blocks.regulatory_footer.order, enabled: blocks.regulatory_footer.enabled },
+      { key: 'legal_footer', position: blocks.legal_footer.order, enabled: blocks.legal_footer.enabled },
     ]
       .filter((b) => b.enabled)
       .sort((a, b) => a.position - b.position);
@@ -79,15 +87,15 @@ export function UnlayerEditor({ editorRef, projectId, compliancePolicy, onEditor
     const tracked: SingleInstanceEntry[] = [];
     const customJS: string[] = [];
     if (blocks.preview_disclosures.enabled) {
-      customJS.push(buildPreviewDisclosuresCustomJS({ ...blocks.preview_disclosures, position: compactPos.preview_disclosures }, ctx));
+      customJS.push(buildPreviewDisclosuresCustomJS({ ...blocks.preview_disclosures, order: compactPos.preview_disclosures }, ctx));
       tracked.push({ name: 'preview_disclosures', label: blocks.preview_disclosures.label, required: blocks.preview_disclosures.required ?? false });
     }
     if (blocks.regulatory_footer.enabled) {
-      customJS.push(buildRegulatoryFooterCustomJS({ ...blocks.regulatory_footer, position: compactPos.regulatory_footer }, ctx));
+      customJS.push(buildRegulatoryFooterCustomJS({ ...blocks.regulatory_footer, order: compactPos.regulatory_footer }, ctx));
       tracked.push({ name: 'regulatory_footer', label: blocks.regulatory_footer.label, required: blocks.regulatory_footer.required ?? false });
     }
     if (blocks.legal_footer.enabled) {
-      customJS.push(buildLegalFooterCustomJS({ ...blocks.legal_footer, position: compactPos.legal_footer }, ctx));
+      customJS.push(buildLegalFooterCustomJS({ ...blocks.legal_footer, order: compactPos.legal_footer }, ctx));
       tracked.push({ name: 'legal_footer', label: blocks.legal_footer.label, required: blocks.legal_footer.required ?? false });
     }
     // The branded image tool slots right after the compliance blocks so it
@@ -95,7 +103,7 @@ export function UnlayerEditor({ editorRef, projectId, compliancePolicy, onEditor
     customJS.push(buildBrandedImageCustomJS(ctx, enabledOrder.length + 1));
     customJS.push(REFERENCES_CUSTOM_JS, buildSingleInstanceCustomJS(tracked));
     return { options: { ...brandOptions, customJS }, bodyValues, trackedNames: tracked.map((t) => t.name) };
-  }, [compliancePolicy]);
+  }, [compliancePolicy, brandVaultid, language]);
 
   const onReady: EmailEditorProps['onReady'] = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

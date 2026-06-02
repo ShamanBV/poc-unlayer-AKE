@@ -1,19 +1,17 @@
 {
-  "$schema": "https://shaman.dev/schema/compliance-policy/v2.1.json",
-  "version": "2.1",
-  "context": {
-    "company": "Novartis",
-    "country": "GB",
-    "language": "en",
-    "product": "Scemblix",
-    "kbSnapshotId": "kb_2026-05-28_novartis_uk_en"
-  },
+  "$schema": "https://shaman.dev/schema/compliance-policy/v3.json",
+  "version": "3.0",
+
+  "country": "GB",
+  "countryVaultid": "00C000000044001",
+  "language": "en",
+  "languages": ["en"],
 
   "documentDefaults": {
-    "fontFamily": "",
+    "fontFamily": "Arial, Helvetica, sans-serif",
     "fontSize": "13px",
     "fontWeight": 400,
-    "color": "",
+    "color": "#151515",
     "lineHeight": "140%",
     "textAlign": "left"
   },
@@ -24,21 +22,11 @@
     "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" }
   },
 
-  "linkConfig": {
-    "hrefSuffix": "?utm_medium={{utm_medium}}&utm_source={{utm_source}}&utm_campaign={{utm_campaign}}&sfmcval={{sfmcval}}"
-  },
-
-  "tools": {
-    "branded_image": {
-      "containerPadding": "20px 20px 20px 20px"
-    }
-  },
-
   "blocks": {
     "preview_disclosures": {
       "enabled": true,
       "required": true,
-      "position": 1,
+      "order": 1,
       "label": "Preview disclosures",
       "layout": { "fontSize": "13px", "textAlign": "center" },
       "container": {
@@ -46,8 +34,6 @@
         "padding": "15px 25px 15px 25px",
         "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" }
       },
-      "containers": [],
-      "slotRouting": {},
       "slotStyles": {
         "prescribing_information": { "fontWeight": "bold" },
         "indication": { "marginTop": "18px" }
@@ -57,33 +43,31 @@
           "id": "audience_restriction",
           "slot": "audience_restriction",
           "label": "Audience Restriction",
-          "displayOrder": 1,
-          "defaultVariantId": "pd_audience_v1",
+          "type": "country",
+          "order": 1,
           "spacing": { "marginBottom": "6px" },
+          "default": {
+            "text": {
+              "en": "This is a promotional email, created and funded by Novartis, intended for UK Healthcare Professionals only."
+            },
+            "placeholders": []
+          },
           "variants": [
             {
-              "id": "pd_audience_v1",
-              "order": 1,
-              "count": 3,
-              "note": "Canonical 2025+ variant",
-              "text": "This is a promotional email, created and funded by Novartis, intended for UK Healthcare Professionals only.",
-              "placeholders": []
-            },
-            {
-              "id": "pd_audience_v2",
-              "order": 2,
-              "count": 1,
+              "id": "audience_v2",
               "note": "One-comma micro-drift",
-              "text": "This is a promotional email created and funded by Novartis, intended for UK Healthcare Professionals only.",
+              "text": {
+                "en": "This is a promotional email created and funded by Novartis, intended for UK Healthcare Professionals only."
+              },
               "placeholders": []
             },
             {
-              "id": "pd_audience_v3",
-              "order": 3,
-              "count": 1,
+              "id": "audience_v3",
+              "note": "Deprecated 2024 template",
               "deprecated": true,
-              "note": "Deprecated 2024 template ('GB' not 'UK')",
-              "text": "This is a promotional email from Novartis intended for GB Healthcare Professionals.",
+              "text": {
+                "en": "This is a promotional email from Novartis intended for GB Healthcare Professionals."
+              },
               "placeholders": []
             }
           ]
@@ -92,91 +76,31 @@
           "id": "prescribing_information",
           "slot": "prescribing_information",
           "label": "PI Link",
-          "displayOrder": 2,
-          "defaultVariantId": "pd_pi_v1",
-          "spacing": { "marginBottom": "6px" },
-          "variants": [
-            {
-              "id": "pd_pi_v1",
-              "order": 1,
-              "count": 4,
-              "product": "Scemblix",
-              "note": "Canonical",
-              "text": "Prescribing information for SCEMBLIX® ▼ (asciminib) can be found {{pi_link}} (external link).",
-              "placeholders": [
-                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/12345/smpc" }
-              ]
-            },
-            {
-              "id": "pd_pi_v2",
-              "order": 2,
-              "count": 1,
-              "product": "Scemblix",
-              "note": "Trailing reference marker (footnote)",
-              "text": "Prescribing information for SCEMBLIX®▼ (asciminib) can be found {{pi_link}}.{{ref1}}",
-              "placeholders": [
-                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/12345/smpc" },
-                { "key": "ref1", "kind": "plain", "anchorText": "1" }
-              ]
-            },
-            {
-              "id": "pd_pi_v3",
-              "order": 3,
-              "count": 1,
-              "product": "Glivec",
-              "note": "Comparator-product PI link",
-              "text": "Prescribing information for GLIVEC® (imatinib) can be found {{pi_link}}.",
-              "placeholders": [
-                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/glivec/smpc" }
-              ]
-            }
-          ]
+          "type": "brand",
+          "order": 2,
+          "spacing": { "marginBottom": "6px" }
         },
         {
           "id": "ae_reporting_disclaimer",
           "slot": "ae_reporting_disclaimer",
           "label": "AE Reporting Note",
-          "displayOrder": 3,
-          "defaultVariantId": "pd_aerd_v1",
+          "type": "country",
+          "order": 3,
           "spacing": { "marginBottom": "6px" },
-          "variants": [
-            {
-              "id": "pd_aerd_v1",
-              "order": 1,
-              "count": 3,
-              "note": "Single observed variant",
-              "text": "Adverse event reporting information can be found at the bottom of the email.",
-              "placeholders": []
-            }
-          ]
+          "default": {
+            "text": {
+              "en": "Adverse event reporting information can be found at the bottom of the email."
+            },
+            "placeholders": []
+          },
+          "variants": []
         },
         {
           "id": "indication",
           "slot": "indication",
           "label": "Indication",
-          "displayOrder": 4,
-          "defaultVariantId": "pd_indication_v1",
-          "variants": [
-            {
-              "id": "pd_indication_v1",
-              "order": 1,
-              "count": 4,
-              "product": "Scemblix",
-              "note": "Canonical 2025+ variant",
-              "text": "SCEMBLIX®▼ (asciminib) is indicated for the treatment of adult patients with Philadelphia chromosome-positive chronic myeloid leukaemia (Ph+ CML) in chronic phase (CP), previously treated with two or more tyrosine kinase inhibitors.",
-              "placeholders": []
-            },
-            {
-              "id": "pd_indication_v2",
-              "order": 2,
-              "count": 1,
-              "deprecated": true,
-              "product": "Scemblix",
-              "note": "Deprecated 2024 template — 'GB Indication:' prefix",
-              "text": "GB Indication: SCEMBLIX® (asciminib) is indicated for the treatment of adult patients with Philadelphia chromosome positive chronic myeloid leukaemia (Ph+ CML) in chronic phase (CP), previously treated with two or more tyrosine kinase inhibitors.",
-              "placeholders": []
-            }
-          ]
+          "type": "brand",
+          "order": 4
         }
       ]
     },
@@ -184,7 +108,7 @@
     "regulatory_footer": {
       "enabled": true,
       "required": true,
-      "position": 2,
+      "order": 2,
       "label": "Regulatory footer",
       "layout": { "fontSize": "13px", "lineHeight": "140%" },
       "container": {
@@ -197,23 +121,13 @@
           "id": "highlighted_box",
           "label": "Highlighted Box",
           "layout": { "fontWeight": "bold", "textAlign": "left" },
-          "container": {
-            "backgroundColor": "",
-            "padding": "24px 32px 24px 32px",
-            "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" }
-          },
-          "elementSpacing": "14px"
+          "container": { "padding": "24px 32px 24px 32px", "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" } }
         },
         {
           "id": "ae_box",
           "label": "AE Reporting Box",
           "layout": { "textAlign": "center" },
-          "container": {
-            "backgroundColor": "",
-            "padding": "24px 32px 24px 32px",
-            "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" },
-            "marginTop": "12px"
-          }
+          "container": { "padding": "24px 32px 24px 32px", "border": { "color": "#000000", "width": "1px", "style": "solid", "radius": "0px" }, "marginTop": "12px" }
         }
       ],
       "slotRouting": {
@@ -230,98 +144,32 @@
           "id": "warnings",
           "slot": "warnings",
           "label": "Warnings",
-          "displayOrder": 1,
-          "defaultVariantId": "rf_warnings_v1",
-          "variants": [
-            {
-              "id": "rf_warnings_v1",
-              "order": 1,
-              "count": 2,
-              "product": "Scemblix",
-              "note": "Canonical 2025+ figures",
-              "text": "The most common adverse reactions of any grade (incidence ≥20%) in patients receiving asciminib were musculoskeletal pain (38.8%), upper respiratory tract infections (29.5%), fatigue (28.9%), thrombocytopenia (28.4%) and headache (25.0%). ▼ Scemblix is subject to additional monitoring.",
-              "placeholders": []
-            },
-            {
-              "id": "rf_warnings_v2",
-              "order": 2,
-              "count": 1,
-              "deprecated": true,
-              "product": "Scemblix",
-              "note": "Older interim figures (different data cut-off)",
-              "text": "The most common adverse reactions of any grade (incidence ≥ 20%) in patients receiving asciminib were musculoskeletal pain (37.1%), upper respiratory tract infections (28.1%), thrombocytopenia (27.5%)…",
-              "placeholders": []
-            },
-            {
-              "id": "rf_warnings_v3",
-              "order": 3,
-              "count": 1,
-              "product": "Scemblix",
-              "note": "Whitespace drift only (fuzzy-merge candidate)",
-              "text": "The most common adverse reactions of any grade (incidence ≥20%) in patients receiving asciminib were musculoskeletal pain (38.8%), upper respiratory tract infections (29.5%), fatigue (28.9%), thrombocytopenia (28.4%)  and headache (25.0%).",
-              "placeholders": []
-            }
-          ]
+          "type": "brand",
+          "order": 1
         },
         {
           "id": "ae_reporting",
           "slot": "ae_reporting",
           "label": "AE Reporting",
-          "displayOrder": 2,
-          "defaultVariantId": "rf_ae_v1",
-          "variants": [
-            {
-              "id": "rf_ae_v1",
-              "order": 1,
-              "count": 4,
-              "note": "Canonical",
-              "text": "Adverse events should be reported. Reporting forms and information can be found at {{yellow_card}} or search for MHRA Yellow Card in the Google Play or Apple App Store. Adverse events should also be reported to Novartis Pharmaceuticals UK Ltd on 01276 698370 or {{medinfo}}.",
-              "placeholders": [
-                { "key": "yellow_card", "kind": "external_link", "anchorText": "www.mhra.gov.uk/yellowcard", "uri": "https://yellowcard.mhra.gov.uk/" },
-                { "key": "medinfo", "kind": "email_link", "anchorText": "medinfo.uk@novartis.com", "uri": "medinfo.uk@novartis.com" }
-              ]
+          "type": "country",
+          "order": 2,
+          "default": {
+            "text": {
+              "en": "Adverse events should be reported. Reporting forms and information can be found at {{yellow_card}} or search for MHRA Yellow Card in the Google Play or Apple App Store. Adverse events should also be reported to Novartis Pharmaceuticals UK Ltd on 01276 698370 or {{medinfo}}."
             },
-            {
-              "id": "rf_ae_v2",
-              "order": 2,
-              "count": 1,
-              "deprecated": true,
-              "note": "Deprecated 2024 template — 'Adverse Event Reporting:' prefix",
-              "text": "Adverse Event Reporting: Adverse events should be reported. Reporting forms and information can be found at {{yellow_card}}. Adverse events should also be reported to Novartis via {{novartis_pv}}.",
-              "placeholders": [
-                { "key": "yellow_card", "kind": "external_link", "anchorText": "www.mhra.gov.uk/yellowcard", "uri": "https://yellowcard.mhra.gov.uk/" },
-                { "key": "novartis_pv", "kind": "external_link", "anchorText": "uk.patientsafety@novartis.com", "uri": "https://uk.patientsafety.novartis.com/" }
-              ]
-            }
-          ]
+            "placeholders": [
+              { "key": "yellow_card", "kind": "external_link", "anchorText": "www.mhra.gov.uk/yellowcard", "uri": "https://yellowcard.mhra.gov.uk/" },
+              { "key": "medinfo", "kind": "email_link", "anchorText": "medinfo.uk@novartis.com", "uri": "medinfo.uk@novartis.com" }
+            ]
+          },
+          "variants": []
         },
         {
           "id": "abbreviations",
           "slot": "abbreviations",
           "label": "Abbreviations",
-          "displayOrder": 3,
-          "defaultVariantId": "rf_abbr_v1",
-          "variants": [
-            {
-              "id": "rf_abbr_v1",
-              "order": 1,
-              "count": 4,
-              "product": "Scemblix",
-              "note": "Canonical reusable subset",
-              "text": "CML = chronic myeloid leukaemia; CP = chronic phase; HCP = healthcare professional; MMR = major molecular response; Ph+ CML-CP = Philadelphia chromosome-positive chronic myeloid leukaemia in chronic phase; TKI = tyrosine kinase inhibitor.",
-              "placeholders": []
-            }
-          ],
-          "kbMeta": {
-            "abbreviations": [
-              { "abbreviation": "CML", "fullForm": "chronic myeloid leukaemia" },
-              { "abbreviation": "CP", "fullForm": "chronic phase" },
-              { "abbreviation": "HCP", "fullForm": "healthcare professional" },
-              { "abbreviation": "MMR", "fullForm": "major molecular response" },
-              { "abbreviation": "Ph+ CML-CP", "fullForm": "Philadelphia chromosome-positive chronic myeloid leukaemia in chronic phase" },
-              { "abbreviation": "TKI", "fullForm": "tyrosine kinase inhibitor" }
-            ]
-          }
+          "type": "brand",
+          "order": 3
         }
       ]
     },
@@ -329,7 +177,7 @@
     "legal_footer": {
       "enabled": true,
       "required": true,
-      "position": 3,
+      "order": 3,
       "label": "Legal footer",
       "layout": { "fontSize": "11px", "lineHeight": "150%", "textAlign": "center" },
       "container": {
@@ -337,156 +185,266 @@
         "padding": "24px 24px 24px 24px",
         "border": { "color": "", "width": "0px", "style": "solid", "radius": "0px" }
       },
-      "containers": [],
-      "slotRouting": {},
       "slotStyles": {
-        "confidentiality_notice": { "fontSize": "10px", "color": "#879091", "marginTop": "12px" },
-        "disclaimers": { "fontSize": "10px", "color": "#879091", "marginTop": "8px" }
+        "confidentiality_notice": { "fontSize": "10px", "color": "#879091", "marginTop": "12px" }
       },
       "logo": {
         "enabled": true,
         "assetTag": "BDS-logo",
         "assetId": "asset_novartis_primary",
         "width": "180",
-        "alt": "Novartis",
-        "spacing": { "marginBottom": "16px" }
+        "alt": "Novartis"
       },
       "elements": [
         {
           "id": "contact_info",
           "slot": "contact_info",
           "label": "Contact Info",
-          "displayOrder": 1,
-          "defaultVariantId": "lf_contact_v1",
-          "spacing": { "marginBottom": "12px" },
-          "variants": [
-            {
-              "id": "lf_contact_v1",
-              "order": 1,
-              "count": 1,
-              "note": "Decomposition pending in 4/5 emails",
-              "text": "Novartis Pharmaceuticals UK Limited. Registered office: 2nd Floor, The Westworks Building, White City Place, 195 Wood Lane, London, W12 7FQ, UK.",
-              "placeholders": []
-            }
-          ]
+          "type": "country",
+          "order": 1,
+          "default": {
+            "text": {
+              "en": "Novartis Pharmaceuticals UK Limited. Registered office: 2nd Floor, The Westworks Building, White City Place, 195 Wood Lane, London, W12 7FQ, UK."
+            },
+            "placeholders": []
+          },
+          "variants": []
         },
         {
           "id": "company_registration",
           "slot": "company_registration",
           "label": "Company Registration",
-          "displayOrder": 2,
-          "defaultVariantId": "lf_reg_v1",
-          "spacing": { "marginBottom": "12px" },
-          "variants": [
-            {
-              "id": "lf_reg_v1",
-              "order": 1,
-              "count": 1,
-              "note": "Post-decomposition count ≈ 4",
-              "text": "Registered in England 00119006.",
-              "placeholders": []
-            }
-          ],
-          "kbMeta": {
-            "registrationNumber": "00119006",
-            "registrationJurisdiction": "England",
-            "legalEntityName": "Novartis Pharmaceuticals UK Limited"
-          }
+          "type": "country",
+          "order": 2,
+          "default": {
+            "text": { "en": "Registered in England 00119006." },
+            "placeholders": []
+          },
+          "variants": []
         },
         {
           "id": "privacy_notice",
           "slot": "privacy_notice",
           "label": "Privacy Notice",
-          "displayOrder": 3,
-          "defaultVariantId": "lf_privacy_v1",
-          "spacing": { "marginBottom": "12px" },
-          "variants": [
-            {
-              "id": "lf_privacy_v1",
-              "order": 1,
-              "count": 4,
-              "note": "Post-decomposition all 2025+ emails",
-              "text": "Privacy Notice: At Novartis we are committed to the responsible use of your personal data and consider privacy a very important matter. For information on how Novartis processes your personal information, please refer to our {{privacy_link}}.",
-              "placeholders": [
-                { "key": "privacy_link", "kind": "external_link", "anchorText": "Privacy Notice", "uri": "https://www.novartis.com/uk-en/privacy-policy" }
-              ]
-            }
-          ]
+          "type": "country",
+          "order": 3,
+          "default": {
+            "text": {
+              "en": "Privacy Notice: At Novartis we are committed to the responsible use of your personal data. For information on how Novartis processes your personal information, please refer to our {{policy}}."
+            },
+            "placeholders": [
+              { "key": "policy", "kind": "external_link", "anchorText": "Privacy Notice", "uri": "https://www.novartis.com/uk-en/privacy-policy" }
+            ]
+          },
+          "variants": []
         },
         {
           "id": "confidentiality_notice",
           "slot": "confidentiality_notice",
           "label": "Confidentiality Notice",
-          "displayOrder": 4,
-          "defaultVariantId": "lf_confidentiality_v1",
-          "variants": [
-            {
-              "id": "lf_confidentiality_v1",
-              "order": 1,
-              "count": 4,
-              "note": "Post-decomposition ≈ 4",
-              "text": "Confidentiality Notice: This e-mail message, including any attachments, is for the sole use of the intended recipient(s) and may contain confidential and privileged information. Any unauthorized review, use, disclosure or distribution is prohibited. If you are not the intended recipient, please contact the sender by reply e-mail and destroy all copies of the original message.",
-              "placeholders": []
-            }
-          ],
-          "kbMeta": { "recipientClass": "intended_recipient_only" }
+          "type": "country",
+          "order": 4,
+          "default": {
+            "text": {
+              "en": "Confidentiality Notice: This e-mail message, including any attachments, is for the sole use of the intended recipient(s) and may contain confidential and privileged information. Any unauthorized review, use, disclosure or distribution is prohibited."
+            },
+            "placeholders": []
+          },
+          "variants": []
         },
         {
           "id": "unsubscribe",
           "slot": "unsubscribe",
           "label": "Unsubscribe",
-          "displayOrder": 5,
-          "defaultVariantId": "lf_unsub_v1",
-          "spacing": { "marginBottom": "6px" },
-          "variants": [
-            {
-              "id": "lf_unsub_v1",
-              "order": 1,
-              "count": 4,
-              "note": "Canonical opt-out wording",
-              "text": "If you wish to opt-out of receiving further marketing communications from Novartis Pharmaceuticals UK Ltd, please click {{unsub}} to unsubscribe.",
-              "placeholders": [
-                { "key": "unsub", "kind": "merge_field", "anchorText": "here", "uri": "%%UNSUB_TOKEN%%" }
-              ]
+          "type": "country",
+          "order": 5,
+          "default": {
+            "text": {
+              "en": "If you wish to opt-out of receiving further marketing communications from Novartis Pharmaceuticals UK Ltd, please click {{unsub}} to unsubscribe."
             },
-            {
-              "id": "lf_unsub_v2",
-              "order": 2,
-              "count": 1,
-              "deprecated": true,
-              "note": "Deprecated 2024 consent-style (opt-in framing)",
-              "text": "You are receiving this email because you have agreed for Novartis Pharmaceuticals UK Limited to send you emails. If you wish to unsubscribe from future communications, please click {{unsub}}.",
-              "placeholders": [
-                { "key": "unsub", "kind": "merge_field", "anchorText": "here", "uri": "%%UNSUB_TOKEN%%" }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "disclaimers",
-          "slot": "disclaimers",
-          "label": "Disclaimers",
-          "displayOrder": 6,
-          "defaultVariantId": "lf_disc_v1",
-          "variants": [
-            {
-              "id": "lf_disc_v1",
-              "order": 1,
-              "count": 1,
-              "note": "External-link warning (subtype OTHER)",
-              "text": "Please note, this link will take you to a promotional website.",
-              "placeholders": []
-            }
-          ]
+            "placeholders": [
+              { "key": "unsub", "kind": "merge_field", "anchorText": "here", "uri": "%%UNSUB_TOKEN%%" }
+            ]
+          },
+          "variants": []
         }
       ],
       "approvalCode": {
         "enabled": true,
         "mlrDocumentId": null,
-        "fallbackPlaceholder": "Pending MLR approval",
-        "layout": { "fontSize": "9px", "color": "#9FA3A4" },
-        "spacing": { "marginTop": "8px" }
+        "fallbackPlaceholder": "Pending MLR approval"
       }
     }
-  }
+  },
+
+  "brands": [
+    {
+      "name": "Scemblix",
+      "vaultid": "00P000000008001",
+      "blocks": {
+        "preview_disclosures": {
+          "prescribing_information": {
+            "default": {
+              "text": {
+                "en": "Prescribing information for SCEMBLIX® ▼ (asciminib) can be found {{pi_link}} (external link)."
+              },
+              "placeholders": [
+                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/12345/smpc" }
+              ]
+            },
+            "variants": [
+              {
+                "id": "pi_v2",
+                "note": "Trailing footnote marker",
+                "text": {
+                  "en": "Prescribing information for SCEMBLIX®▼ (asciminib) can be found {{pi_link}}.{{ref1}}"
+                },
+                "placeholders": [
+                  { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/12345/smpc" },
+                  { "key": "ref1", "kind": "plain", "anchorText": "1" }
+                ]
+              }
+            ]
+          },
+          "indication": {
+            "default": {
+              "text": {
+                "en": "SCEMBLIX®▼ (asciminib) is indicated for the treatment of adult patients with Philadelphia chromosome-positive chronic myeloid leukaemia (Ph+ CML) in chronic phase (CP), previously treated with two or more tyrosine kinase inhibitors."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        },
+        "regulatory_footer": {
+          "warnings": {
+            "default": {
+              "text": {
+                "en": "▼ Scemblix is subject to additional monitoring. This will allow quick identification of new safety information. Healthcare professionals are asked to report any suspected adverse reactions."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          },
+          "abbreviations": {
+            "default": {
+              "text": {
+                "en": "CML = chronic myeloid leukaemia; CP = chronic phase; HCP = healthcare professional; MMR = major molecular response; Ph+ CML-CP = Philadelphia chromosome-positive chronic myeloid leukaemia in chronic phase; TKI = tyrosine kinase inhibitor."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        }
+      }
+    },
+
+    {
+      "name": "Xanlinax",
+      "vaultid": "00P000000006001",
+      "blocks": {
+        "preview_disclosures": {
+          "audience_restriction": {
+            "_comment": "Brand-level override for a country-type element. Shown when ?brand=00P000000006001. Falls back to the element.default at the country level if this entry is removed.",
+            "default": {
+              "text": {
+                "en": "This is a promotional email about XANLINAX, created and funded by Novartis, intended for UK Healthcare Professionals only."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          },
+          "prescribing_information": {
+            "default": {
+              "text": {
+                "en": "Prescribing information for XANLINAX® (hexalbriesumab) can be found {{pi_link}} (external link)."
+              },
+              "placeholders": [
+                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/22222/smpc" }
+              ]
+            },
+            "variants": []
+          },
+          "indication": {
+            "default": {
+              "text": {
+                "en": "XANLINAX® (hexalbriesumab) is indicated for the treatment of adult patients with advanced solid tumours, in combination with platinum-based chemotherapy."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        },
+        "regulatory_footer": {
+          "warnings": {
+            "default": {
+              "text": {
+                "en": "The most common adverse reactions (≥20%) include musculoskeletal pain, fatigue, headache, and decreased appetite. Monitor patients for hypertension, hepatotoxicity, and infusion reactions."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          },
+          "abbreviations": {
+            "default": {
+              "text": {
+                "en": "AE = adverse event; HCP = healthcare professional; PI = prescribing information."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        }
+      }
+    },
+
+    {
+      "name": "Fruzaqla",
+      "vaultid": "00P000000009001",
+      "blocks": {
+        "preview_disclosures": {
+          "prescribing_information": {
+            "default": {
+              "text": {
+                "en": "Prescribing information for FRUZAQLA® (fruquintinib) can be found {{pi_link}} (external link)."
+              },
+              "placeholders": [
+                { "key": "pi_link", "kind": "external_link", "anchorText": "here", "uri": "https://www.medicines.org.uk/emc/product/33333/smpc" }
+              ]
+            },
+            "variants": []
+          },
+          "indication": {
+            "default": {
+              "text": {
+                "en": "Fruzaqla® (fruquintinib) is indicated as monotherapy for the treatment of adult patients with metastatic colorectal cancer (mCRC) previously treated with available standard therapies."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        },
+        "regulatory_footer": {
+          "warnings": {
+            "default": {
+              "text": {
+                "en": "Important warnings: Fruzaqla can cause hypertension, hepatotoxicity, infections, and embryo-fetal toxicity. Monitor patients regularly."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          },
+          "abbreviations": {
+            "default": {
+              "text": {
+                "en": "AE = adverse event; HCP = healthcare professional; mCRC = metastatic colorectal cancer; PI = prescribing information."
+              },
+              "placeholders": []
+            },
+            "variants": []
+          }
+        }
+      }
+    }
+  ]
 }

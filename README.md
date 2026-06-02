@@ -73,10 +73,35 @@ If you choose not to run apryse-designer, you can skip §1 entirely. Run §2 onl
 | Where | Setting | Default |
 |---|---|---|
 | `src/App.tsx` | `SHAMAN_ACCOUNT_ID` | `shaman-onco-us` |
-| `src/App.tsx` | `SHAMAN_PRODUCT_ID` | `2` (Xanlinax) |
+| `src/App.tsx` | `SHAMAN_PRODUCT_ID` | `2` (Xanlinax) — used by the Visual Library only |
+| `src/App.tsx` | `DEFAULT_BRAND_VAULTID` | `00P000000008001` (Scemblix) |
+| `src/App.tsx` | `DEFAULT_LANGUAGE` | `en` |
 | `?policy=...` query param | Compliance policy URL | `/compliance.json` |
-| `public/compliance.json` | Live compliance policy | — |
-| `public/compliance.reference.json` | Fully-annotated reference policy with `_comment` keys for every field | — |
+| `public/compliance.json` | Live compliance policy (v3 — per-country file) | — |
+
+## URL params
+
+The editor picks the active brand + language from the URL. In production, Shaman will pass these from email metadata. For local dev:
+
+| Param | Meaning | Source |
+|---|---|---|
+| `?brand=<vaultid>` | Active brand (the Veeva product ID — `Product.vaultid` in Shaman's GraphQL schema) | Falls back to `DEFAULT_BRAND_VAULTID` |
+| `?lang=<iso639>` | Active language; must be in `compliance.json` → `languages[]` | Falls back to `DEFAULT_LANGUAGE` |
+| `?policy=<url>` | Override the policy URL (useful for switching between countries) | Falls back to `/compliance.json` |
+
+### Examples
+
+| URL | What it renders |
+|---|---|
+| [`/`](http://127.0.0.1:5175/) | Defaults — Scemblix, `en`, `/compliance.json` (GB) |
+| [`?brand=00P000000008001`](http://127.0.0.1:5175/?brand=00P000000008001) | Scemblix |
+| [`?brand=00P000000006001`](http://127.0.0.1:5175/?brand=00P000000006001) | Xanlinax — note `audience_restriction` is overridden at the brand level |
+| [`?brand=00P000000009001`](http://127.0.0.1:5175/?brand=00P000000009001) | Fruzaqla |
+| [`?brand=00P000000006001&lang=en`](http://127.0.0.1:5175/?brand=00P000000006001&lang=en) | Xanlinax in English (explicit) |
+| [`?brand=bogus`](http://127.0.0.1:5175/?brand=bogus) | Friendly error — lists available brands as click-through links |
+| [`?lang=fr`](http://127.0.0.1:5175/?lang=fr) | Friendly error — French not yet in `languages[]` for GB |
+
+Resolution rule per element: `brands[active].blocks[<block>][<element>]` → fall back to the country-level `element.default` if the element's `type === 'country'`. For `type === 'brand'`, missing brand text is a render error (fail loudly).
 
 ## Key files
 
